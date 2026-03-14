@@ -20,26 +20,37 @@ struct ContentView: View {
         if showOnboarding {
             OnboardingView()
         } else {
+            // iOS 17-compatible TabView syntax (.tabItem + .tag)
             TabView(selection: $selectedTab) {
-                Tab("Home", systemImage: "house.fill", value: 0) {
-                    DashboardView()
-                }
+                DashboardView(selectedTab: $selectedTab)
+                    .tabItem {
+                        Label("Home", image: "TabIcon-Dashboard")
+                    }
+                    .tag(0)
 
-                Tab("Habits", systemImage: "checkmark.circle.fill", value: 1) {
-                    HabitTrackerView()
-                }
+                HabitTrackerView()
+                    .tabItem {
+                        Label("Habits", image: "TabIcon-Habits")
+                    }
+                    .tag(1)
 
-                Tab("Tasks", systemImage: "list.bullet", value: 2) {
-                    TaskListView()
-                }
+                TaskListView()
+                    .tabItem {
+                        Label("Tasks", image: "TabIcon-Tasks")
+                    }
+                    .tag(2)
 
-                Tab("Mindset", systemImage: "waveform.path", value: 3) {
-                    MindsetView()
-                }
+                MindsetView()
+                    .tabItem {
+                        Label("Mindset", image: "TabIcon-Mindset")
+                    }
+                    .tag(3)
 
-                Tab("Settings", systemImage: "gearshape.fill", value: 4) {
-                    SettingsView()
-                }
+                SettingsView()
+                    .tabItem {
+                        Label("Settings", image: "TabIcon-Settings")
+                    }
+                    .tag(4)
             }
             .tint(.kaizenTeal)
         }

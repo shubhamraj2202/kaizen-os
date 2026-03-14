@@ -76,7 +76,8 @@ final class StoreKitManager {
         await checkPurchaseStatus()
     }
 
-    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+    // nonisolated: called from Task.detached in listenForTransactions — no actor required
+    private nonisolated func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {
         case .unverified:
             throw StoreError.failedVerification

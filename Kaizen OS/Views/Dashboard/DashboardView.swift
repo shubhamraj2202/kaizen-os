@@ -7,9 +7,14 @@ import SwiftUI
 import SwiftData
 
 struct DashboardView: View {
+    @Binding var selectedTab: Int
+    @Environment(\.modelContext) private var modelContext
+
     @Query(filter: #Predicate<Habit> { $0.isActive },
            sort: \Habit.sortOrder)
     private var habits: [Habit]
+
+    @State private var hapticTrigger = 0
 
     var body: some View {
         ScrollView {
@@ -42,10 +47,10 @@ struct DashboardView: View {
                 }
                 .padding(.top, 8)
 
-                // Day Score placeholder
+                // Day Score
                 DayScoreCard(habits: habits)
 
-                // Stats row placeholder
+                // Stats row
                 HStack(spacing: 10) {
                     StatCard(icon: "🔥", value: "\(bestStreak)d", label: "Best Streak", color: .kaizenOrange)
                     StatCard(icon: "📊", value: "\(weekPercent)%", label: "This Week", color: .kaizenTeal)
@@ -59,24 +64,45 @@ struct DashboardView: View {
                             .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(.white)
                         Spacer()
-                        Text("See all →")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color.kaizenTeal)
+                        // FIX: was plain Text, now a real Button
+                        Button {
+                            selectedTab = 1
+                        } label: {
+                            Text("See all →")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(Color.kaizenTeal)
+                        }
                     }
 
-                    ForEach(habits.prefix(4)) { habit in
-                        HabitPreviewRow(habit: habit)
+                    if habits.isEmpty {
+                        Text("No habits yet — tap Habits to add your first one.")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.textTertiary)
+                            .multilineTextAlignment(.center)
+                            .padding(.vertical, 20)
+                    } else {
+                        ForEach(habits.prefix(4)) { habit in
+                            // FIX: now passes a real toggle action
+                            HabitPreviewRow(habit: habit) {
+                                toggleHabit(habit)
+                            }
+                        }
                     }
                 }
 
-                // Mindset CTA
-                MindsetCTABanner()
+                // Mindset CTA — FIX: now passes action to "Log now"
+                MindsetCTABanner {
+                    selectedTab = 3
+                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
         .background(Color.bgPrimary)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: hapticTrigger)
     }
+
+    // MARK: - Computed Stats
 
     private var bestStreak: Int {
         habits.map(\.longestStreak).max() ?? 0
@@ -102,6 +128,23 @@ struct DashboardView: View {
 
     private var totalWins: Int {
         habits.flatMap(\.entries).filter(\.isCompleted).count
+    }
+
+    // MARK: - Actions
+
+    private func toggleHabit(_ habit: Habit) {
+        hapticTrigger += 1
+        let today = Calendar.current.startOfDay(for: Date())
+        if let existing = habit.entries.first(where: {
+            Calendar.current.startOfDay(for: $0.date) == today
+        }) {
+            existing.isCompleted ? existing.uncomplete() : existing.complete()
+        } else {
+            let entry = HabitEntry(date: today, habit: habit)
+            entry.complete()
+            modelContext.insert(entry)
+        }
+        try? modelContext.save()
     }
 }
 
@@ -133,9 +176,11 @@ private struct DayScoreCard: View {
                     .font(.system(size: 32, weight: .heavy))
                     .foregroundStyle(.white)
                 HStack(spacing: 8) {
-                    TagPill(text: "🔥 \(doneCount)/\(habits.count) habits",
-                            bgColor: .kaizenTeal.opacity(0.15),
-                            textColor: .kaizenTeal)
+                    TagPill(
+                        text: "🔥 \(doneCount)/\(habits.count) habits",
+                        bgColor: .kaizenTeal.opacity(0.15),
+                        textColor: .kaizenTeal
+                    )
                 }
             }
             Spacer()
@@ -188,43 +233,49 @@ private struct StatCard: View {
 }
 
 // MARK: - Habit Preview Row
+// FIX: Added onToggle closure so tapping actually toggles the habit
 
 private struct HabitPreviewRow: View {
     let habit: Habit
+    let onToggle: () -> Void
+
     private var isCompleted: Bool { habit.isCompleted(on: Date()) }
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(habit.emoji)
-                .font(.system(size: 18))
-            Text(habit.name)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white)
-            Spacer()
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isCompleted ? Color.kaizenTeal : .clear)
-                    .frame(width: 22, height: 22)
-                if !isCompleted {
+        Button(action: onToggle) {
+            HStack(spacing: 12) {
+                Text(habit.emoji)
+                    .font(.system(size: 18))
+                Text(habit.name)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white)
+                Spacer()
+                ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 2)
+                        .fill(isCompleted ? Color.kaizenTeal : .clear)
                         .frame(width: 22, height: 22)
-                }
-                if isCompleted {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .heavy))
-                        .foregroundStyle(.black)
+                    if !isCompleted {
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 2)
+                            .frame(width: 22, height: 22)
+                    }
+                    if isCompleted {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .heavy))
+                            .foregroundStyle(.black)
+                    }
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(0.03))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+            )
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(Color.white.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.05), lineWidth: 1)
-        )
+        .buttonStyle(.plain)
     }
 }
 
@@ -247,8 +298,11 @@ private struct TagPill: View {
 }
 
 // MARK: - Mindset CTA Banner
+// FIX: Added onLogNow closure so "Log now" actually navigates to Mindset tab
 
 private struct MindsetCTABanner: View {
+    let onLogNow: () -> Void
+
     var body: some View {
         HStack(spacing: 14) {
             Text("🧘")
@@ -262,13 +316,15 @@ private struct MindsetCTABanner: View {
                     .foregroundColor(Color.textSecondary)
             }
             Spacer()
-            Text("Log now")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(Color.kaizenPurple)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            Button(action: onLogNow) {
+                Text("Log now")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.kaizenPurple)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
         }
         .padding(16)
         .background(Color.kaizenPurple.opacity(0.12))
@@ -281,6 +337,6 @@ private struct MindsetCTABanner: View {
 }
 
 #Preview {
-    DashboardView()
+    DashboardView(selectedTab: .constant(0))
         .modelContainer(for: [Habit.self, HabitEntry.self, DailyTask.self, MindsetLog.self, UserProfile.self], inMemory: true)
 }

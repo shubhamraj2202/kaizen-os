@@ -1,0 +1,21 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#0D1321"/>
+  <!-- Track ring -->
+  <circle cx="512" cy="486" r="274" fill="none" stroke="#1A2540" stroke-width="86"/>
+  <!-- Progress arc ~75% -->
+  <circle cx="512" cy="486" r="274" fill="none" stroke="#00E5C8" stroke-width="86"
+    stroke-dasharray="1284 428" stroke-dashoffset="0" stroke-linecap="round"
+    transform="rotate(-90 512 486)"/>
+  <!-- Percentage -->
+  <text x="512" y="462" text-anchor="middle"
+    font-family="-apple-system,'SF Pro Display',sans-serif"
+    font-size="138" font-weight="700" fill="#FFFFFF">75%</text>
+  <!-- Today label -->
+  <text x="512" y="566" text-anchor="middle"
+    font-family="-apple-system,'SF Pro Display',sans-serif"
+    font-size="68" fill="#00E5C8" letter-spacing="8">TODAY</text>
+  <!-- App name -->
+  <text x="512" y="880" text-anchor="middle"
+    font-family="-apple-system,'SF Pro Display',sans-serif"
+    font-size="86" font-weight="700" fill="#FFFFFF" letter-spacing="10">KAIZEN</text>
+</svg>

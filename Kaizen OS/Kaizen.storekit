@@ -1,0 +1,60 @@
+{
+  "identifier" : "9B7D3F8A-4B9C-4E6A-A1B2-C3D4E5F6A7B8",
+  "nonConsumableIAPProducts" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "C1D4E5F6-A7B8-9C0D-1E2F-3A4B5C6D7E8F",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited habits, rich widgets, HealthKit sync, and CSV export.",
+          "displayName" : "Kaizen OS Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.shubh.kaizenos.premium",
+      "purchasedByDefault" : false,
+      "referenceName" : "Kaizen OS Premium"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGraceEnabled" : false,
+    "_billingRetry" : {
+      "_enabled" : false
+    },
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      }
+    ]
+  },
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

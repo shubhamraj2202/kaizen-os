@@ -1,0 +1,21 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#090E1A"/>
+  <!-- Bar 1 -->
+  <rect x="188" y="632" width="120" height="188" rx="34" fill="#6450FF"/>
+  <!-- Bar 2 -->
+  <rect x="342" y="512" width="120" height="308" rx="34" fill="#6450FF"/>
+  <!-- Bar 3 -->
+  <rect x="496" y="393" width="120" height="427" rx="34" fill="#00E5C8"/>
+  <!-- Bar 4 -->
+  <rect x="650" y="290" width="120" height="530" rx="34" fill="#00E5C8"/>
+  <!-- Trend line -->
+  <polyline points="248,630 402,510 556,391 710,288"
+    fill="none" stroke="#FF8C42" stroke-width="22"
+    stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Tip dot -->
+  <circle cx="710" cy="288" r="34" fill="#FF8C42"/>
+  <!-- App name -->
+  <text x="512" y="970" text-anchor="middle"
+    font-family="-apple-system,'SF Pro Display',sans-serif"
+    font-size="82" font-weight="700" fill="#FFFFFF" letter-spacing="12">KAIZEN OS</text>
+</svg>

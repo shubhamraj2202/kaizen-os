@@ -1,0 +1,19 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#090E1A"/>
+  <!-- Outer ring arc -->
+  <circle cx="512" cy="512" r="376" fill="none" stroke="#00E5C8" stroke-width="26"
+    stroke-dasharray="1880 486" stroke-dashoffset="-120" stroke-linecap="round"/>
+  <!-- Inner ring arc -->
+  <circle cx="512" cy="512" r="290" fill="none" stroke="#6450FF" stroke-width="18"
+    stroke-dasharray="1365 460" stroke-dashoffset="256" stroke-linecap="round"/>
+  <!-- Kanji 改善 -->
+  <text x="512" y="490" text-anchor="middle"
+    font-family="'Hiragino Sans','Noto Sans JP','Yu Gothic',sans-serif"
+    font-size="172" font-weight="700" fill="#FFFFFF">改善</text>
+  <!-- OS label -->
+  <text x="512" y="632" text-anchor="middle"
+    font-family="-apple-system,'SF Pro Display',sans-serif"
+    font-size="94" font-weight="700" fill="#00E5C8" letter-spacing="26">OS</text>
+  <!-- Bottom dot -->
+  <circle cx="512" cy="802" r="26" fill="#00E5C8"/>
+</svg>

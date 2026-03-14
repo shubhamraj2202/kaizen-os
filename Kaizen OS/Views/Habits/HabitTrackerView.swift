@@ -10,6 +10,7 @@ struct HabitTrackerView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Habit.sortOrder) private var habits: [Habit]
     @State private var showAddHabit = false
+    @State private var hapticTrigger = 0
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -30,10 +31,25 @@ struct HabitTrackerView: View {
                     // Heatmap
                     HeatmapView(habits: habits)
 
-                    // Habit rows
-                    ForEach(habits.filter(\.isActive)) { habit in
-                        HabitRowView(habit: habit) {
-                            toggleHabit(habit)
+                    // Habit rows or empty state
+                    if habits.filter(\.isActive).isEmpty {
+                        VStack(spacing: 12) {
+                            Text("🌱")
+                                .font(.system(size: 48))
+                            Text("No habits yet")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(.white)
+                            Text("Tap + to add your first habit")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color.textTertiary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                    } else {
+                        ForEach(habits.filter(\.isActive)) { habit in
+                            HabitRowView(habit: habit) {
+                                toggleHabit(habit)
+                            }
                         }
                     }
                 }
@@ -41,6 +57,7 @@ struct HabitTrackerView: View {
                 .padding(.bottom, 80)
             }
             .background(Color.bgPrimary)
+            .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: hapticTrigger)
 
             // FAB
             Button {
@@ -62,7 +79,9 @@ struct HabitTrackerView: View {
         }
     }
 
+    // MARK: - Toggle with haptic feedback
     private func toggleHabit(_ habit: Habit) {
+        hapticTrigger += 1
         let today = Calendar.current.startOfDay(for: Date())
         if let existing = habit.entries.first(where: {
             Calendar.current.startOfDay(for: $0.date) == today

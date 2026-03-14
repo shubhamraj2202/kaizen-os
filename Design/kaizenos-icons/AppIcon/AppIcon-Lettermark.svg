@@ -1,0 +1,15 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#090E1A"/>
+  <!-- Teal square -->
+  <rect x="205" y="205" width="614" height="614" rx="154" fill="#00E5C8"/>
+  <!-- K stem -->
+  <rect x="367" y="307" width="52" height="410" rx="26" fill="#090E1A"/>
+  <!-- K upper arm -->
+  <line x1="367" y1="512" x2="607" y2="307" stroke="#090E1A" stroke-width="52" stroke-linecap="round"/>
+  <!-- K lower arm -->
+  <line x1="367" y1="512" x2="607" y2="717" stroke="#090E1A" stroke-width="52" stroke-linecap="round"/>
+  <!-- Kanji subtitle -->
+  <text x="512" y="998" text-anchor="middle"
+    font-family="'Hiragino Sans','Noto Sans JP',sans-serif"
+    font-size="72" fill="#6450FF">改善</text>
+</svg>

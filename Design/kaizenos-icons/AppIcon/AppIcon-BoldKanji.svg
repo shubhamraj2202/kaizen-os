@@ -1,0 +1,13 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#6450FF"/>
+  <!-- Large kanji -->
+  <text x="512" y="580" text-anchor="middle"
+    font-family="'Hiragino Sans','Noto Sans JP','Yu Gothic',serif"
+    font-size="445" font-weight="900" fill="#FFFFFF">改</text>
+  <!-- Teal bottom bar -->
+  <rect x="0" y="752" width="1024" height="272" fill="#00E5C8"/>
+  <!-- App name on bar -->
+  <text x="512" y="924" text-anchor="middle"
+    font-family="-apple-system,'SF Pro Display',sans-serif"
+    font-size="94" font-weight="700" fill="#090E1A" letter-spacing="17">KAIZEN OS</text>
+</svg>
