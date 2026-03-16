@@ -24,31 +24,31 @@ struct ContentView: View {
             TabView(selection: $selectedTab) {
                 DashboardView(selectedTab: $selectedTab)
                     .tabItem {
-                        Label("Home", image: "TabIcon-Dashboard")
+                        Label("Home", systemImage: "house.fill")
                     }
                     .tag(0)
 
                 HabitTrackerView()
                     .tabItem {
-                        Label("Habits", image: "TabIcon-Habits")
+                        Label("Habits", systemImage: "checkmark.circle.fill")
                     }
                     .tag(1)
 
                 TaskListView()
                     .tabItem {
-                        Label("Tasks", image: "TabIcon-Tasks")
+                        Label("Tasks", systemImage: "list.bullet")
                     }
                     .tag(2)
 
                 MindsetView()
                     .tabItem {
-                        Label("Mindset", image: "TabIcon-Mindset")
+                        Label("Mindset", systemImage: "waveform.path")
                     }
                     .tag(3)
 
                 SettingsView()
                     .tabItem {
-                        Label("Settings", image: "TabIcon-Settings")
+                        Label("Settings", systemImage: "gearshape.fill")
                     }
                     .tag(4)
             }
