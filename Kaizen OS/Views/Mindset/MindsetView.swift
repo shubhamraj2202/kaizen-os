@@ -9,11 +9,20 @@ import SwiftData
 struct MindsetView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var logs: [MindsetLog]
+    @Query private var profiles: [UserProfile]
 
     @State private var energy: Double = 50
     @State private var focus: Double = 50
     @State private var mood: Double = 50
     @State private var selectedDay: Int = 3
+
+    // Health fields
+    @State private var sleepHours: Double = 7.0
+    @State private var wakeTime: Date = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var stepsText: String = ""
+    @State private var isSyncingHealth = false
+
+    private var profile: UserProfile? { profiles.first }
 
     private var todayLog: MindsetLog? {
         let today = Calendar.current.startOfDay(for: Date())
@@ -81,6 +90,101 @@ struct MindsetView: View {
                         .stroke(Color.kaizenPurple.opacity(0.25), lineWidth: 1)
                 )
 
+                // Health section
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Text("HEALTH")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(Color.textTertiary)
+                            .tracking(0.8)
+                        Spacer()
+                        // Premium: Sync from Health button
+                        if profile?.isPremium == true {
+                            Button {
+                                syncFromHealthKit()
+                            } label: {
+                                HStack(spacing: 6) {
+                                    if isSyncingHealth {
+                                        ProgressView()
+                                            .scaleEffect(0.7)
+                                            .tint(Color.kaizenTeal)
+                                    } else {
+                                        Image(systemName: "heart.fill")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.red)
+                                    }
+                                    Text(isSyncingHealth ? "Syncing…" : "Sync from Health")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(Color.kaizenTeal)
+                                }
+                            }
+                            .disabled(isSyncingHealth)
+                        } else {
+                            HStack(spacing: 4) {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(Color.textTertiary)
+                                Text("Premium")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(Color.textTertiary)
+                            }
+                        }
+                    }
+
+                    // Sleep hours
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("Sleep")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color.textSecondary)
+                            Spacer()
+                            Text(String(format: "%.1f hrs", sleepHours))
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(Color.kaizenPurple)
+                        }
+                        Slider(value: $sleepHours, in: 0...12, step: 0.5)
+                            .tint(Color.kaizenPurple)
+                    }
+
+                    Divider().background(Color.borderDefault)
+
+                    // Wake time
+                    HStack {
+                        Text("Wake time")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.textSecondary)
+                        Spacer()
+                        DatePicker("", selection: $wakeTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.compact)
+                            .tint(Color.kaizenTeal)
+                            .colorScheme(.dark)
+                            .labelsHidden()
+                    }
+
+                    Divider().background(Color.borderDefault)
+
+                    // Steps
+                    HStack {
+                        Text("Steps")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.textSecondary)
+                        Spacer()
+                        TextField("0", text: $stepsText)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(Color.kaizenOrange)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.numberPad)
+                            .frame(width: 80)
+                    }
+                }
+                .padding(16)
+                .background(Color.white.opacity(0.04))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.borderDefault, lineWidth: 1)
+                )
+
                 // Day rings row
                 if !last7Days.isEmpty {
                     HStack(spacing: 0) {
@@ -112,29 +216,49 @@ struct MindsetView: View {
         .onAppear { loadTodayValues() }
     }
 
+    // MARK: - Load / Save
+
     private func loadTodayValues() {
         if let log = todayLog {
             energy = Double(log.energy)
             focus = Double(log.focus)
             mood = Double(log.mood)
+            sleepHours = log.sleepHours ?? 7.0
+            wakeTime = log.wakeTime ?? (Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date())
+            stepsText = log.stepsManual.map { "\($0)" } ?? ""
         }
     }
 
     private func saveLog() {
+        let stepsVal = Int(stepsText)
         if let existing = todayLog {
             existing.energy = Int(energy)
             existing.focus = Int(focus)
             existing.mood = Int(mood)
+            existing.sleepHours = sleepHours
+            existing.wakeTime = wakeTime
+            existing.stepsManual = stepsVal
         } else {
-            let log = MindsetLog(
-                date: Date(),
-                energy: Int(energy),
-                focus: Int(focus),
-                mood: Int(mood)
-            )
+            let log = MindsetLog(date: Date(), energy: Int(energy), focus: Int(focus), mood: Int(mood))
+            log.sleepHours = sleepHours
+            log.wakeTime = wakeTime
+            log.stepsManual = stepsVal
             modelContext.insert(log)
         }
         try? modelContext.save()
+    }
+
+    private func syncFromHealthKit() {
+        isSyncingHealth = true
+        Task {
+            let snapshot = await HealthKitManager.shared.fetchTodayHealth()
+            await MainActor.run {
+                if let h = snapshot.sleepHours { sleepHours = min(12, max(0, h)) }
+                if let w = snapshot.wakeTime { wakeTime = w }
+                if let s = snapshot.steps { stepsText = "\(s)" }
+                isSyncingHealth = false
+            }
+        }
     }
 }
 
@@ -182,5 +306,5 @@ private struct MindsetSlider: View {
 
 #Preview {
     MindsetView()
-        .modelContainer(for: [MindsetLog.self], inMemory: true)
+        .modelContainer(for: [MindsetLog.self, UserProfile.self], inMemory: true)
 }

@@ -7,9 +7,10 @@ import SwiftUI
 
 struct HabitRowView: View {
     let habit: Habit
+    let date: Date          // which day to show completion for
     let onToggle: () -> Void
 
-    private var isCompleted: Bool { habit.isCompleted(on: Date()) }
+    private var isCompleted: Bool { habit.isCompleted(on: date) }
 
     var body: some View {
         Button(action: onToggle) {
@@ -71,6 +72,6 @@ struct HabitRowView: View {
 
 #Preview {
     let habit = Habit(name: "Early Start", emoji: "⏰", colorHex: "#00E5C8")
-    return HabitRowView(habit: habit, onToggle: {})
+    return HabitRowView(habit: habit, date: Date(), onToggle: {})
         .background(Color.bgPrimary)
 }

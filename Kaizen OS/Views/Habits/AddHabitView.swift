@@ -12,8 +12,8 @@ struct AddHabitView: View {
     @Query(filter: #Predicate<Habit> { $0.isActive }) private var activeHabits: [Habit]
     @Query private var profiles: [UserProfile]
 
-    @State private var name = ""
-    @State private var emoji = "✅"
+    @State private var name: String
+    @State private var emoji: String
     @State private var enableReminder = false
     @State private var reminderTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var reminderDays: Set<Int> = []
@@ -23,6 +23,13 @@ struct AddHabitView: View {
 
     private let emojiOptions = ["✅", "⏰", "💪", "🧠", "🎧", "📵", "💰", "📚", "🏃", "💧", "🧘", "✍️", "🥗", "😴", "🎯"]
     private let weekdayLabels = ["S", "M", "T", "W", "T", "F", "S"]
+
+    // MARK: - Init (supports optional pre-fill from templates)
+
+    init(prefillName: String = "", prefillEmoji: String = "✅") {
+        _name = State(initialValue: prefillName)
+        _emoji = State(initialValue: prefillEmoji)
+    }
 
     var body: some View {
         NavigationStack {
@@ -82,7 +89,6 @@ struct AddHabitView: View {
 
                         // Reminder section
                         VStack(spacing: 0) {
-                            // Toggle row
                             HStack {
                                 Image(systemName: "bell.fill")
                                     .font(.system(size: 15))
@@ -100,11 +106,8 @@ struct AddHabitView: View {
                             .padding(.vertical, 14)
 
                             if enableReminder {
-                                Divider()
-                                    .background(Color.borderDefault)
-                                    .padding(.horizontal, 16)
+                                Divider().background(Color.borderDefault).padding(.horizontal, 16)
 
-                                // Time picker
                                 HStack {
                                     Text("Time")
                                         .font(.system(size: 15, weight: .medium))
@@ -119,11 +122,8 @@ struct AddHabitView: View {
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 10)
 
-                                Divider()
-                                    .background(Color.borderDefault)
-                                    .padding(.horizontal, 16)
+                                Divider().background(Color.borderDefault).padding(.horizontal, 16)
 
-                                // Weekday selector
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text("Repeat")
                                         .font(.system(size: 13, weight: .medium))
@@ -133,11 +133,7 @@ struct AddHabitView: View {
                                         ForEach(0..<7, id: \.self) { day in
                                             let isSelected = reminderDays.contains(day)
                                             Button {
-                                                if isSelected {
-                                                    reminderDays.remove(day)
-                                                } else {
-                                                    reminderDays.insert(day)
-                                                }
+                                                if isSelected { reminderDays.remove(day) } else { reminderDays.insert(day) }
                                             } label: {
                                                 Text(weekdayLabels[day])
                                                     .font(.system(size: 13, weight: .semibold))
@@ -160,16 +156,11 @@ struct AddHabitView: View {
                         }
                         .background(Color.white.opacity(0.04))
                         .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.borderDefault, lineWidth: 1)
-                        )
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.borderDefault, lineWidth: 1))
                         .animation(.easeInOut(duration: 0.2), value: enableReminder)
 
                         // Save button
-                        Button {
-                            saveHabit()
-                        } label: {
+                        Button { saveHabit() } label: {
                             Text("Add Habit")
                                 .font(.system(size: 17, weight: .bold))
                                 .foregroundStyle(.black)
@@ -194,14 +185,11 @@ struct AddHabitView: View {
                 }
             }
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .sheet(isPresented: $showPaywall) {
-                PaywallView()
-            }
+            .sheet(isPresented: $showPaywall) { PaywallView() }
         }
     }
 
     private func saveHabit() {
-        // Check free tier limit
         if profile?.isPremium != true && activeHabits.count >= UserProfile.freeHabitLimit {
             showPaywall = true
             return

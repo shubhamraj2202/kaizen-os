@@ -13,6 +13,13 @@ struct AddTaskView: View {
     @State private var title = ""
     @State private var priority: TaskPriority = .normal
     @State private var category: TaskCategory = .other
+    @State private var taskDate: Date
+
+    // MARK: - Init
+
+    init(initialDate: Date = Date()) {
+        _taskDate = State(initialValue: Calendar.current.startOfDay(for: initialDate))
+    }
 
     var body: some View {
         NavigationStack {
@@ -35,6 +42,32 @@ struct AddTaskView: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(Color.borderDefault, lineWidth: 1)
                             )
+                    }
+
+                    // Date picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Date")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color.textSecondary)
+                        HStack {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 15))
+                                .foregroundColor(Color.kaizenTeal)
+                            Spacer()
+                            DatePicker("", selection: $taskDate, displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                                .tint(Color.kaizenTeal)
+                                .colorScheme(.dark)
+                                .labelsHidden()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.borderDefault, lineWidth: 1)
+                        )
                     }
 
                     // Priority picker
@@ -115,7 +148,7 @@ struct AddTaskView: View {
     }
 
     private func saveTask() {
-        let task = DailyTask(title: title, priority: priority, category: category)
+        let task = DailyTask(title: title, date: taskDate, priority: priority, category: category)
         modelContext.insert(task)
         try? modelContext.save()
         dismiss()

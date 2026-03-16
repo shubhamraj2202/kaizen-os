@@ -9,8 +9,27 @@ import SwiftData
 struct HabitTrackerView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Habit.sortOrder) private var habits: [Habit]
+
     @State private var showAddHabit = false
+    @State private var showTemplates = false
     @State private var hapticTrigger = 0
+    @State private var viewingDate = Calendar.current.startOfDay(for: Date())
+
+    // Pre-fill state for templates → AddHabitView flow
+    @State private var prefillName = ""
+    @State private var prefillEmoji = "✅"
+    @State private var pendingTemplate = false
+
+    private var isViewingToday: Bool {
+        Calendar.current.isDateInToday(viewingDate)
+    }
+
+    private var viewingDateLabel: String {
+        if isViewingToday { return "Today" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d"
+        return formatter.string(from: viewingDate)
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -31,6 +50,53 @@ struct HabitTrackerView: View {
                     // Heatmap
                     HeatmapView(habits: habits)
 
+                    // Date navigation row
+                    HStack(spacing: 12) {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                viewingDate = Calendar.current.date(byAdding: .day, value: -1, to: viewingDate) ?? viewingDate
+                            }
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color.textSecondary)
+                                .frame(width: 32, height: 32)
+                                .background(Color.white.opacity(0.06))
+                                .clipShape(Circle())
+                        }
+
+                        Spacer()
+
+                        VStack(spacing: 2) {
+                            Text(viewingDateLabel)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.white)
+                            if !isViewingToday {
+                                Text("Tap habits to edit history")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Color.kaizenOrange)
+                            }
+                        }
+
+                        Spacer()
+
+                        Button {
+                            guard !isViewingToday else { return }
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                viewingDate = Calendar.current.date(byAdding: .day, value: 1, to: viewingDate) ?? viewingDate
+                            }
+                        } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(isViewingToday ? Color.textTertiary : Color.textSecondary)
+                                .frame(width: 32, height: 32)
+                                .background(Color.white.opacity(isViewingToday ? 0.02 : 0.06))
+                                .clipShape(Circle())
+                        }
+                        .disabled(isViewingToday)
+                    }
+                    .padding(.horizontal, 4)
+
                     // Habit rows or empty state
                     if habits.filter(\.isActive).isEmpty {
                         VStack(spacing: 12) {
@@ -47,48 +113,82 @@ struct HabitTrackerView: View {
                         .padding(.vertical, 40)
                     } else {
                         ForEach(habits.filter(\.isActive)) { habit in
-                            HabitRowView(habit: habit) {
+                            HabitRowView(habit: habit, date: viewingDate) {
                                 toggleHabit(habit)
                             }
                         }
+
+                        // Analysis section
+                        HabitAnalysisView(habits: habits)
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 80)
+                .padding(.bottom, 100)
             }
             .background(Color.bgPrimary)
             .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: hapticTrigger)
 
-            // FAB
-            Button {
-                showAddHabit = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.black)
-                    .frame(width: 56, height: 56)
-                    .background(Color.kaizenTeal)
-                    .clipShape(Circle())
-                    .shadow(color: .kaizenTeal.opacity(0.4), radius: 16)
+            // Bottom actions: Templates pill + FAB
+            HStack(spacing: 12) {
+                Button {
+                    showTemplates = true
+                } label: {
+                    Label("Templates", systemImage: "sparkles")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 13)
+                        .background(Color.bgElevated)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.borderDefault, lineWidth: 1))
+                }
+
+                Button {
+                    showAddHabit = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.black)
+                        .frame(width: 56, height: 56)
+                        .background(Color.kaizenTeal)
+                        .clipShape(Circle())
+                        .shadow(color: .kaizenTeal.opacity(0.4), radius: 16)
+                }
             }
             .padding(.trailing, 20)
             .padding(.bottom, 20)
         }
-        .sheet(isPresented: $showAddHabit) {
-            AddHabitView()
+        .sheet(isPresented: $showAddHabit, onDismiss: {
+            prefillName = ""
+            prefillEmoji = "✅"
+            pendingTemplate = false
+        }) {
+            AddHabitView(prefillName: prefillName, prefillEmoji: prefillEmoji)
+        }
+        .sheet(isPresented: $showTemplates, onDismiss: {
+            if pendingTemplate {
+                showAddHabit = true
+            }
+        }) {
+            HabitTemplateView { name, emoji in
+                prefillName = name
+                prefillEmoji = emoji
+                pendingTemplate = true
+                showTemplates = false
+            }
         }
     }
 
-    // MARK: - Toggle with haptic feedback
+    // MARK: - Toggle for viewingDate (supports past date editing)
     private func toggleHabit(_ habit: Habit) {
         hapticTrigger += 1
-        let today = Calendar.current.startOfDay(for: Date())
+        let day = Calendar.current.startOfDay(for: viewingDate)
         if let existing = habit.entries.first(where: {
-            Calendar.current.startOfDay(for: $0.date) == today
+            Calendar.current.startOfDay(for: $0.date) == day
         }) {
             existing.isCompleted ? existing.uncomplete() : existing.complete()
         } else {
-            let entry = HabitEntry(date: today, habit: habit)
+            let entry = HabitEntry(date: day, habit: habit)
             entry.complete()
             modelContext.insert(entry)
         }

@@ -11,23 +11,42 @@ struct TaskListView: View {
     @Query(sort: \DailyTask.sortOrder) private var allTasks: [DailyTask]
     @State private var showAddTask = false
     @State private var hapticTrigger = 0
+    @State private var selectedDate = Calendar.current.startOfDay(for: Date())
 
     private var todayStart: Date { Calendar.current.startOfDay(for: Date()) }
-    private var todayEnd: Date { Calendar.current.date(byAdding: .day, value: 1, to: todayStart)! }
 
-    private var todaysTasks: [DailyTask] {
+    // Date range displayed in the strip: 7 days back → 7 days forward
+    private var dateRange: [Date] {
+        (-7...7).compactMap {
+            Calendar.current.date(byAdding: .day, value: $0, to: todayStart)
+        }
+    }
+
+    private var selectedStart: Date { selectedDate }
+    private var selectedEnd: Date { Calendar.current.date(byAdding: .day, value: 1, to: selectedDate)! }
+
+    private var selectedTasks: [DailyTask] {
         allTasks
-            .filter { $0.date >= todayStart && $0.date < todayEnd }
+            .filter { $0.date >= selectedStart && $0.date < selectedEnd }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 
-    private var top3: [DailyTask] { todaysTasks.filter { $0.priority == .top3 } }
-    private var otherTasks: [DailyTask] { todaysTasks.filter { $0.priority == .normal } }
-    private var completedCount: Int { todaysTasks.filter(\.isCompleted).count }
+    private var top3: [DailyTask] { selectedTasks.filter { $0.priority == .top3 } }
+    private var otherTasks: [DailyTask] { selectedTasks.filter { $0.priority == .normal } }
+    private var completedCount: Int { selectedTasks.filter(\.isCompleted).count }
 
     private var progressPct: Double {
-        guard !todaysTasks.isEmpty else { return 0 }
-        return Double(completedCount) / Double(todaysTasks.count)
+        guard !selectedTasks.isEmpty else { return 0 }
+        return Double(completedCount) / Double(selectedTasks.count)
+    }
+
+    private var headerTitle: String {
+        if Calendar.current.isDateInToday(selectedDate) { return "Today" }
+        if Calendar.current.isDateInTomorrow(selectedDate) { return "Tomorrow" }
+        if Calendar.current.isDateInYesterday(selectedDate) { return "Yesterday" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d"
+        return formatter.string(from: selectedDate)
     }
 
     var body: some View {
@@ -46,10 +65,32 @@ struct TaskListView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 8)
 
+                    // Date strip
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(dateRange, id: \.self) { date in
+                                DatePill(date: date, isSelected: date == selectedDate, isToday: date == todayStart) {
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        selectedDate = date
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 4)
+                    }
+                    .padding(.horizontal, -20)
+
+                    // Selected date label
+                    Text(headerTitle)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
                     // Progress bar
                     VStack(spacing: 8) {
                         HStack {
-                            Text("\(completedCount) of \(todaysTasks.count) completed")
+                            Text("\(completedCount) of \(selectedTasks.count) completed")
                                 .font(.system(size: 12))
                                 .foregroundColor(Color.textSecondary)
                             Spacer()
@@ -126,14 +167,14 @@ struct TaskListView: View {
                     }
 
                     // Empty state
-                    if todaysTasks.isEmpty {
+                    if selectedTasks.isEmpty {
                         VStack(spacing: 12) {
                             Text("📋")
                                 .font(.system(size: 48))
-                            Text("No tasks today")
+                            Text("No tasks \(Calendar.current.isDateInToday(selectedDate) ? "today" : "on this day")")
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundStyle(.white)
-                            Text("Tap + to add your first task")
+                            Text("Tap + to add a task")
                                 .font(.system(size: 14))
                                 .foregroundColor(Color.textTertiary)
                         }
@@ -163,8 +204,52 @@ struct TaskListView: View {
             .padding(.bottom, 20)
         }
         .sheet(isPresented: $showAddTask) {
-            AddTaskView()
+            AddTaskView(initialDate: selectedDate)
         }
+    }
+}
+
+// MARK: - Date Pill
+
+private struct DatePill: View {
+    let date: Date
+    let isSelected: Bool
+    let isToday: Bool
+    let action: () -> Void
+
+    private var dayNum: String {
+        "\(Calendar.current.component(.day, from: date))"
+    }
+
+    private var weekLetter: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEEE"
+        return formatter.string(from: date)
+    }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Text(weekLetter)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(isSelected ? .black : Color.textTertiary)
+                Text(dayNum)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(isSelected ? .black : .white)
+
+                Circle()
+                    .fill(isToday && !isSelected ? Color.kaizenTeal : .clear)
+                    .frame(width: 4, height: 4)
+            }
+            .frame(width: 44, height: 58)
+            .background(isSelected ? Color.kaizenTeal : Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isToday && !isSelected ? Color.kaizenTeal.opacity(0.4) : .clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -207,8 +292,7 @@ private struct TaskRow: View {
             .buttonStyle(.plain)
 
             if showDivider {
-                Divider()
-                    .background(Color.white.opacity(0.05))
+                Divider().background(Color.white.opacity(0.05))
             }
         }
     }

@@ -304,6 +304,26 @@ KaizenOS/
 **Next steps:**
 - Session 10: App Store screenshots, onboarding polish, App Groups finalisation
 
+### Session (2026-03-16) — UX Features: Future Tasks + Heatmap + Templates + Analysis + Health [DONE]
+
+**What was built:**
+
+- **HeatmapView.swift** — Switched from rolling-28-day window to actual calendar month; date numbers shown in each cell; proper weekday alignment (leadingBlanks offset, Mon=0); today highlighted with teal border; future days dimmed
+- **TaskListView.swift** — Added horizontal date strip (7 days back + today + 7 days forward); `selectedDate` state drives task filter; date pill shows weekday letter + day number + teal dot for today; empty state text adapts to selected day
+- **AddTaskView.swift** — Added `initialDate` param + `DatePicker` row; tasks can be scheduled for any date (past or future); `DailyTask.init` normalises to `startOfDay` as before
+- **HabitRowView.swift** — Added `date: Date` parameter; `isCompleted` now uses the passed date instead of hardcoded `Date()`
+- **HabitTrackerView.swift** — Added `viewingDate` state with ◀ ▶ navigation arrows; HabitRowView rows reflect past-date completion; "Browse Templates" Capsule button alongside FAB; `HabitAnalysisView` section below habit rows; sheets managed for templates → AddHabit pre-fill flow
+- **AddHabitView.swift** — Added `init(prefillName:prefillEmoji:)` for template pre-fill support
+- **HabitTemplateView.swift** (new) — 20 habit templates across 5 categories (Health, Fitness, Mind, Focus, Finance); tapping selects and dismisses, then opens AddHabitView pre-filled
+- **HabitAnalysisView.swift** (new) — Per-habit horizontal bar chart sorted by 30-day completion rate; bars animate in; teal ≥70%, orange 40–69%, coral <40%
+- **MindsetLog.swift** — Added `sleepHours: Double?`, `wakeTime: Date?`, `stepsManual: Int?` (all optional, SwiftData handles migration automatically)
+- **MindsetView.swift** — Added Health card (sleep slider, wake time picker, steps text field); premium users see "Sync from Health" button; non-premium sees lock badge
+- **HealthKitManager.swift** (new) — `@Observable` premium helper; reads `sleepAnalysis`, `stepCount`; returns `HealthSnapshot`; **requires HealthKit entitlement in Xcode Signing & Capabilities**
+
+**HealthKit setup required (manual in Xcode):**
+- Target → Signing & Capabilities → + Capability → HealthKit
+- Add `NSHealthShareUsageDescription` to Info.plist if not auto-added
+
 ### Session (2026-03-16) — Notifications [DONE]
 
 **What was built:**
