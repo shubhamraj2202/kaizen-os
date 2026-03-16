@@ -302,8 +302,18 @@ KaizenOS/
 - Generated PNGs: `Kaizen OS/Assets.xcassets/` (AppIcon.appiconset, TabIcon-*.imageset)
 
 **Next steps:**
-- Session 9: Notifications — schedule per-habit reminder using `NotificationManager`; wire up in SettingsView
 - Session 10: App Store screenshots, onboarding polish, App Groups finalisation
+
+### Session (2026-03-16) — Notifications [DONE]
+
+**What was built:**
+- **AddHabitView.swift** — Added reminder section: toggle to enable, `DatePicker` for time, weekday selector (S M T W T F S buttons); calls `NotificationManager.shared.scheduleHabitReminder` on save after requesting auth; sets `habit.reminderTime` and `habit.reminderDays`
+- **SettingsView.swift** — Notifications row now shows "On"/"Off" status from `UserProfile.dailyReminderEnabled`; tapping opens `NotificationSettingsView` sheet; added `UserNotifications` import
+- **NotificationSettingsView** (inside SettingsView.swift) — New sheet: daily check-in reminder toggle + time picker; persists to `UserProfile.dailyReminderEnabled` / `dailyReminderTime` via SwiftData; calls `NotificationManager.shared.scheduleDailyReminder` or removes it on save
+
+**Architecture:**
+- Per-habit reminders: set in `AddHabitView`, stored on `Habit.reminderTime` + `Habit.reminderDays`, scheduled via `NotificationManager.scheduleHabitReminder`
+- Daily reminder: set in `NotificationSettingsView`, stored on `UserProfile`, scheduled via `NotificationManager.scheduleDailyReminder`
 
 ### Session (2026-03-15) — Naming Decision [DONE]
 

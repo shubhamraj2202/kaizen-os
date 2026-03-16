@@ -5,11 +5,13 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
     @State private var showPaywall = false
+    @State private var showNotificationSettings = false
 
     private var profile: UserProfile? { profiles.first }
 
@@ -76,10 +78,12 @@ struct SettingsView: View {
 
                 // Notifications section
                 VStack(spacing: 0) {
-                    SettingsRow(icon: "bell.fill", title: "Notifications", detail: "Manage") {
-                        Task {
-                            await NotificationManager.shared.requestAuthorization()
-                        }
+                    SettingsRow(
+                        icon: "bell.fill",
+                        title: "Notifications",
+                        detail: (profile?.dailyReminderEnabled == true) ? "On" : "Off"
+                    ) {
+                        showNotificationSettings = true
                     }
                 }
                 .background(Color.white.opacity(0.04))
@@ -108,6 +112,137 @@ struct SettingsView: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }
+        .sheet(isPresented: $showNotificationSettings) {
+            if let profile {
+                NotificationSettingsView(profile: profile)
+            }
+        }
+    }
+}
+
+// MARK: - Notification Settings Sheet
+
+struct NotificationSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    let profile: UserProfile
+
+    @State private var dailyEnabled: Bool
+    @State private var dailyTime: Date
+
+    init(profile: UserProfile) {
+        self.profile = profile
+        _dailyEnabled = State(initialValue: profile.dailyReminderEnabled)
+        _dailyTime = State(initialValue: profile.dailyReminderTime ?? Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date())
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.bgPrimary.ignoresSafeArea()
+
+                VStack(spacing: 20) {
+                    // Daily reminder card
+                    VStack(spacing: 0) {
+                        // Toggle
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Daily Check-in Reminder")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                Text("Get a nudge to log your progress")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color.textSecondary)
+                            }
+                            Spacer()
+                            Toggle("", isOn: $dailyEnabled)
+                                .tint(Color.kaizenTeal)
+                                .labelsHidden()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+
+                        if dailyEnabled {
+                            Divider()
+                                .background(Color.borderDefault)
+                                .padding(.horizontal, 16)
+
+                            HStack {
+                                Text("Time")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(Color.textSecondary)
+                                Spacer()
+                                DatePicker("", selection: $dailyTime, displayedComponents: .hourAndMinute)
+                                    .datePickerStyle(.compact)
+                                    .tint(Color.kaizenTeal)
+                                    .colorScheme(.dark)
+                                    .labelsHidden()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                    }
+                    .background(Color.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.borderDefault, lineWidth: 1)
+                    )
+                    .animation(.easeInOut(duration: 0.2), value: dailyEnabled)
+
+                    Text("Per-habit reminders can be set when adding a habit.")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.textTertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+
+                    Spacer()
+
+                    // Save button
+                    Button {
+                        save()
+                    } label: {
+                        Text("Save")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.kaizenTeal)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 32)
+            }
+            .navigationTitle("Notifications")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(Color.textSecondary)
+                }
+            }
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        }
+    }
+
+    private func save() {
+        profile.dailyReminderEnabled = dailyEnabled
+        profile.dailyReminderTime = dailyEnabled ? dailyTime : nil
+        try? modelContext.save()
+
+        Task {
+            await NotificationManager.shared.requestAuthorization()
+            if dailyEnabled {
+                NotificationManager.shared.scheduleDailyReminder(time: dailyTime)
+            } else {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["daily_reminder"])
+            }
+        }
+
+        dismiss()
     }
 }
 
