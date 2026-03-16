@@ -276,6 +276,39 @@ KaizenOS/
 - **SwiftUI:** https://developer.apple.com/documentation/swiftui
 - **StoreKit 2:** https://developer.apple.com/documentation/storekit
 
+## Current State (as of 2026-03-16)
+
+### What's fully built & working
+- All 5 tabs: Dashboard, Habits, Tasks, Mindset, Settings
+- SwiftData models: Habit, HabitEntry, DailyTask, MindsetLog, UserProfile
+- Habit tracker with heatmap (calendar month, date numbers, past-date editing)
+- Habit templates (20 templates, 5 categories) + per-habit analysis bar chart
+- Task list with date strip (±7 days), future/past task scheduling
+- Mindset tracker with health card (sleep, wake time, steps)
+- Notifications: per-habit reminders + daily check-in reminder
+- HealthKit (premium): sleep, steps, wake time auto-import
+- StoreKit 2 paywall ($4.99, product ID: `com.shubh.kaizenos.premium`)
+- WidgetKit: small + medium widget (day score ring + streak)
+- SF Symbols tab bar (fixed from broken custom PNG icons)
+- `.gitignore` in place — `xcuserstate` no longer tracked
+
+### Pending manual Xcode steps
+- App Groups (`group.com.shubh.kaizenos`) — add to both main target + widget extension via Signing & Capabilities (needed for widget live data)
+- Bundle ID change: `com.shubh.kaizenos` → `com.shubh.zenshin` (App Store listing name is "Zenshin")
+
+### App Store Connect
+- App Apple ID: `6760590233`
+- Current build: 7 (Xcode Cloud auto-builds on push to `main`)
+- Last rejection fixed: ITMS-90683 `NSHealthUpdateUsageDescription` missing (commit `091f913`)
+- Build 7 resubmitted — awaiting result
+
+### Next priorities
+1. App Groups finalisation (widget live data)
+2. Onboarding polish
+3. App Store screenshots
+
+---
+
 ## Session Status
 
 ### Session (2026-03-13) — Bug Fixes + WidgetKit + Polish
@@ -320,9 +353,10 @@ KaizenOS/
 - **MindsetView.swift** — Added Health card (sleep slider, wake time picker, steps text field); premium users see "Sync from Health" button; non-premium sees lock badge
 - **HealthKitManager.swift** (new) — `@Observable` premium helper; reads `sleepAnalysis`, `stepCount`; returns `HealthSnapshot`; **requires HealthKit entitlement in Xcode Signing & Capabilities**
 
-**HealthKit setup required (manual in Xcode):**
-- Target → Signing & Capabilities → + Capability → HealthKit
-- Add `NSHealthShareUsageDescription` to Info.plist if not auto-added
+**HealthKit setup — COMPLETE:**
+- HealthKit entitlement added (`Kaizen OS/Kaizen OS.entitlements`)
+- `NSHealthShareUsageDescription` + `NSHealthUpdateUsageDescription` both in `project.pbxproj` (Debug + Release)
+- ITMS-90683 App Store Connect rejection fixed (commit `091f913`)
 
 ### Session (2026-03-16) — Notifications [DONE]
 
