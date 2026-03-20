@@ -127,6 +127,7 @@ struct HabitTrackerView: View {
             }
             .background(Color.bgPrimary)
             .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: hapticTrigger)
+            .onAppear { autoArchiveExpiredHabits() }
 
             // Bottom actions: Templates pill + FAB
             HStack(spacing: 12) {
@@ -177,6 +178,18 @@ struct HabitTrackerView: View {
                 showTemplates = false
             }
         }
+    }
+
+    // MARK: - Auto-archive habits past their end date
+
+    private func autoArchiveExpiredHabits() {
+        let today = Calendar.current.startOfDay(for: Date())
+        for habit in habits where habit.isActive {
+            if let end = habit.endDate, Calendar.current.startOfDay(for: end) < today {
+                habit.isActive = false
+            }
+        }
+        try? modelContext.save()
     }
 
     // MARK: - Toggle for viewingDate (supports past date editing)

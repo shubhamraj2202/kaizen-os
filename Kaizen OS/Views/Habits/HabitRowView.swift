@@ -25,13 +25,25 @@ struct HabitRowView: View {
                 }
 
                 // Name & streak
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(habit.name)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white)
-                    Text("🔥 \(habit.currentStreak) day streak")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color.textTertiary)
+                    HStack(spacing: 6) {
+                        Text("🔥 \(habit.currentStreak) day streak")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.textTertiary)
+                        if habit.reminderTime != nil {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(Color.kaizenTeal.opacity(0.7))
+                        }
+                        if let badge = habit.durationBadge {
+                            Text(badge)
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(badge == "🎉 Done!" ? Color.kaizenOrange : Color.kaizenPurple.opacity(0.9))
+                        }
+                    }
                 }
 
                 Spacer()

@@ -309,6 +309,27 @@ KaizenOS/
 
 ---
 
+### Session (2026-03-20) — Habit UX: Custom Emoji + Duration + Reminder Lead Time + Bell Icon [DONE]
+
+**What was built:**
+
+- **Habit.swift** — Added `reminderLeadMinutes: Int?` (nil = at time) and `endDate: Date?` (nil = unlimited). Added `durationBadge` computed property: returns "18d left" / "1d left" / "🎉 Done!" based on days remaining.
+
+- **AddHabitView.swift** — Three new sections added:
+  1. **Custom emoji input** — below the 15-emoji quick-pick grid, a "Or type any emoji →" row with a `TextField`. User opens iOS emoji keyboard and types any emoji. `onChange` captures last 2 characters (emoji can be multi-scalar). Custom emoji overrides grid selection.
+  2. **Duration section** — Horizontal chip row: Forever / 21 days / 90 days / 1 year / Custom. "Custom" reveals a `DatePicker`. Shows "Auto-archives on …" preview for non-forever options. Saves to `habit.endDate`.
+  3. **Reminder lead time** — New "Notify me" chip row when reminder is toggled on: At time / 5 min before / 10 min before / 15 min before / 30 min before. Saves to `habit.reminderLeadMinutes`.
+
+- **NotificationManager.swift** — `scheduleHabitReminder` now accepts `leadMinutes: Int = 0`. Subtracts lead time from `reminderTime` before scheduling `UNCalendarNotificationTrigger`. Existing callers unaffected (default = 0).
+
+- **HabitRowView.swift** — Subtitle row now shows:
+  - `bell.fill` (teal, 9pt) if habit has a reminder set
+  - Duration badge from `habit.durationBadge` (purple "18d left" or orange "🎉 Done!")
+
+- **HabitTrackerView.swift** — Added `autoArchiveExpiredHabits()` called `.onAppear`. Iterates active habits; if `endDate` is in the past, sets `isActive = false` and saves. Habit disappears from active list automatically when challenge is complete.
+
+---
+
 ## Session Status
 
 ### Session (2026-03-13) — Bug Fixes + WidgetKit + Polish

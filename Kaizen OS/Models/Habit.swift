@@ -17,6 +17,8 @@ final class Habit {
     var isActive: Bool
     var reminderTime: Date?
     var reminderDays: [Int]
+    var reminderLeadMinutes: Int?   // nil = at time (0 min)
+    var endDate: Date?              // nil = unlimited
 
     @Relationship(deleteRule: .cascade)
     var entries: [HabitEntry] = []
@@ -31,6 +33,19 @@ final class Habit {
         self.isActive = true
         self.reminderTime = nil
         self.reminderDays = []
+        self.reminderLeadMinutes = nil
+        self.endDate = nil
+    }
+
+    // Returns "18d left", "1d left", or "🎉 Done!" when habit has an end date
+    var durationBadge: String? {
+        guard let end = endDate else { return nil }
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let endDay = cal.startOfDay(for: end)
+        let diff = cal.dateComponents([.day], from: today, to: endDay).day ?? 0
+        if diff <= 0 { return "🎉 Done!" }
+        return "\(diff)d left"
     }
 
     var currentStreak: Int {

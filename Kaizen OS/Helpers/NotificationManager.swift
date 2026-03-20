@@ -22,12 +22,13 @@ final class NotificationManager {
         }
     }
 
-    func scheduleHabitReminder(habitName: String, emoji: String, time: Date, weekdays: [Int], habitID: String) {
+    func scheduleHabitReminder(habitName: String, emoji: String, time: Date, weekdays: [Int], habitID: String, leadMinutes: Int = 0) {
         removeHabitReminder(habitID: habitID)
 
         let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: time)
-        let minute = calendar.component(.minute, from: time)
+        let adjustedTime = calendar.date(byAdding: .minute, value: -leadMinutes, to: time) ?? time
+        let hour = calendar.component(.hour, from: adjustedTime)
+        let minute = calendar.component(.minute, from: adjustedTime)
 
         let daysToSchedule = weekdays.isEmpty ? Array(0...6) : weekdays
 
