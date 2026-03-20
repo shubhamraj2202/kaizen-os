@@ -51,7 +51,7 @@ struct AddHabitView: View {
     @State private var enableReminder = false
     @State private var reminderTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var reminderDays: Set<Int> = []
-    @State private var reminderLeadMinutes: Int = 0
+    @State private var reminderLeadMinutes: Set<Int> = [0]  // multi-select, default = at time
 
     // Duration
     @State private var durationOption: DurationOption = .forever
@@ -299,15 +299,23 @@ struct AddHabitView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(leadOptions, id: \.minutes) { option in
-                                Button { reminderLeadMinutes = option.minutes } label: {
+                                Button {
+                                    if reminderLeadMinutes.contains(option.minutes) {
+                                        // Keep at least one selected
+                                        if reminderLeadMinutes.count > 1 { reminderLeadMinutes.remove(option.minutes) }
+                                    } else {
+                                        reminderLeadMinutes.insert(option.minutes)
+                                    }
+                                } label: {
+                                    let isSelected = reminderLeadMinutes.contains(option.minutes)
                                     Text(option.label)
                                         .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(reminderLeadMinutes == option.minutes ? .white : Color.textSecondary)
+                                        .foregroundColor(isSelected ? .white : Color.textSecondary)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 7)
-                                        .background(reminderLeadMinutes == option.minutes ? Color.kaizenTeal.opacity(0.2) : Color.white.opacity(0.06))
+                                        .background(isSelected ? Color.kaizenTeal.opacity(0.2) : Color.white.opacity(0.06))
                                         .clipShape(Capsule())
-                                        .overlay(Capsule().stroke(reminderLeadMinutes == option.minutes ? Color.kaizenTeal : .clear, lineWidth: 1))
+                                        .overlay(Capsule().stroke(isSelected ? Color.kaizenTeal : .clear, lineWidth: 1))
                                 }
                             }
                         }
@@ -381,7 +389,7 @@ struct AddHabitView: View {
         if enableReminder {
             habit.reminderTime = reminderTime
             habit.reminderDays = Array(reminderDays).sorted()
-            habit.reminderLeadMinutes = reminderLeadMinutes
+            habit.reminderLeadMinutesList = Array(reminderLeadMinutes).sorted()
             Task {
                 await NotificationManager.shared.requestAuthorization()
                 NotificationManager.shared.scheduleHabitReminder(
@@ -390,7 +398,7 @@ struct AddHabitView: View {
                     time: reminderTime,
                     weekdays: Array(reminderDays).sorted(),
                     habitID: habit.id.uuidString,
-                    leadMinutes: reminderLeadMinutes
+                    leadMinutesList: Array(reminderLeadMinutes).sorted()
                 )
             }
         }

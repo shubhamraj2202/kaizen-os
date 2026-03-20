@@ -22,42 +22,47 @@ final class NotificationManager {
         }
     }
 
-    func scheduleHabitReminder(habitName: String, emoji: String, time: Date, weekdays: [Int], habitID: String, leadMinutes: Int = 0) {
+    // leadMinutesList: each value schedules a separate notification (e.g. [0, 10] = at time + 10 min before)
+    func scheduleHabitReminder(habitName: String, emoji: String, time: Date, weekdays: [Int], habitID: String, leadMinutesList: [Int] = [0]) {
         removeHabitReminder(habitID: habitID)
 
         let calendar = Calendar.current
-        let adjustedTime = calendar.date(byAdding: .minute, value: -leadMinutes, to: time) ?? time
-        let hour = calendar.component(.hour, from: adjustedTime)
-        let minute = calendar.component(.minute, from: adjustedTime)
-
         let daysToSchedule = weekdays.isEmpty ? Array(0...6) : weekdays
+        let offsets = leadMinutesList.isEmpty ? [0] : leadMinutesList
 
-        for weekday in daysToSchedule {
-            var components = DateComponents()
-            components.hour = hour
-            components.minute = minute
-            // Convert 0=Sun...6=Sat to Calendar weekday (1=Sun...7=Sat)
-            components.weekday = weekday + 1
-
-            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        for leadMinutes in offsets {
+            let adjustedTime = calendar.date(byAdding: .minute, value: -leadMinutes, to: time) ?? time
+            let hour = calendar.component(.hour, from: adjustedTime)
+            let minute = calendar.component(.minute, from: adjustedTime)
 
             let content = UNMutableNotificationContent()
             content.title = "\(emoji) \(habitName)"
-            content.body = "Time to keep your streak going!"
+            content.body = leadMinutes == 0 ? "Time to keep your streak going!" : "Starting in \(leadMinutes) min — get ready!"
             content.sound = .default
 
-            let request = UNNotificationRequest(
-                identifier: "\(habitID)_\(weekday)",
-                content: content,
-                trigger: trigger
-            )
+            for weekday in daysToSchedule {
+                var components = DateComponents()
+                components.hour = hour
+                components.minute = minute
+                components.weekday = weekday + 1  // Calendar: 1=Sun...7=Sat
 
-            UNUserNotificationCenter.current().add(request)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+                let request = UNNotificationRequest(
+                    identifier: "\(habitID)_\(weekday)_\(leadMinutes)",
+                    content: content,
+                    trigger: trigger
+                )
+                UNUserNotificationCenter.current().add(request)
+            }
         }
     }
 
     func removeHabitReminder(habitID: String) {
-        let identifiers = (0...6).map { "\(habitID)_\($0)" }
+        // Remove all weekday × lead-time combinations
+        let possibleLeads = [0, 5, 10, 15, 30]
+        let identifiers = (0...6).flatMap { weekday in
+            possibleLeads.map { lead in "\(habitID)_\(weekday)_\(lead)" }
+        }
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 

@@ -17,7 +17,7 @@ final class Habit {
     var isActive: Bool
     var reminderTime: Date?
     var reminderDays: [Int]
-    var reminderLeadMinutes: Int?   // nil = at time (0 min)
+    var reminderLeadMinutesList: [Int]  // each value = one notification offset (e.g. [0, 10])
     var endDate: Date?              // nil = unlimited
 
     @Relationship(deleteRule: .cascade)
@@ -33,7 +33,7 @@ final class Habit {
         self.isActive = true
         self.reminderTime = nil
         self.reminderDays = []
-        self.reminderLeadMinutes = nil
+        self.reminderLeadMinutesList = []
         self.endDate = nil
     }
 
