@@ -12,6 +12,7 @@ struct HabitTrackerView: View {
 
     @State private var showAddHabit = false
     @State private var showTemplates = false
+    @State private var editingHabit: Habit? = nil
     @State private var hapticTrigger = 0
     @State private var viewingDate = Calendar.current.startOfDay(for: Date())
 
@@ -116,6 +117,21 @@ struct HabitTrackerView: View {
                             HabitRowView(habit: habit, date: viewingDate) {
                                 toggleHabit(habit)
                             }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button {
+                                    editingHabit = habit
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(Color.kaizenTeal)
+
+                                Button(role: .destructive) {
+                                    habit.isActive = false
+                                    try? modelContext.save()
+                                } label: {
+                                    Label("Archive", systemImage: "archivebox")
+                                }
+                            }
                         }
 
                         // Analysis section
@@ -158,6 +174,9 @@ struct HabitTrackerView: View {
             }
             .padding(.trailing, 20)
             .padding(.bottom, 20)
+        }
+        .sheet(item: $editingHabit) { habit in
+            AddHabitView(editing: habit)
         }
         .sheet(isPresented: $showAddHabit, onDismiss: {
             prefillName = ""

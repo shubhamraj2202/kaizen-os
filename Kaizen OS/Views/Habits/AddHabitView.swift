@@ -59,6 +59,7 @@ struct AddHabitView: View {
 
     @State private var showPaywall = false
 
+    private var editingHabit: Habit?   // non-nil = edit mode
     private var profile: UserProfile? { profiles.first }
 
     private let emojiOptions = ["✅", "⏰", "💪", "🧠", "🎧", "📵", "💰", "📚", "🏃", "💧", "🧘", "✍️", "🥗", "😴", "🎯"]
@@ -68,11 +69,30 @@ struct AddHabitView: View {
         ("15 min before", 15), ("30 min before", 30)
     ]
 
-    // MARK: - Init (supports optional pre-fill from templates)
+    // MARK: - Init
 
+    // New habit (optionally pre-filled from a template)
     init(prefillName: String = "", prefillEmoji: String = "✅") {
         _name = State(initialValue: prefillName)
         _emoji = State(initialValue: prefillEmoji)
+    }
+
+    // Edit existing habit — pre-populates all fields
+    init(editing habit: Habit) {
+        editingHabit = habit
+        _name = State(initialValue: habit.name)
+        _emoji = State(initialValue: habit.emoji)
+        _enableReminder = State(initialValue: habit.reminderTime != nil)
+        _reminderTime = State(initialValue: habit.reminderTime ?? (Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()))
+        _reminderDays = State(initialValue: Set(habit.reminderDays))
+        _reminderLeadMinutes = State(initialValue: habit.reminderLeadMinutesList.isEmpty ? [0] : Set(habit.reminderLeadMinutesList))
+        if let end = habit.endDate {
+            _durationOption = State(initialValue: .custom)
+            _customEndDate = State(initialValue: end)
+        } else {
+            _durationOption = State(initialValue: .forever)
+            _customEndDate = State(initialValue: Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date())
+        }
     }
 
     var body: some View {
@@ -106,7 +126,7 @@ struct AddHabitView: View {
 
                         // Save button
                         Button { saveHabit() } label: {
-                            Text("Add Habit")
+                            Text(editingHabit == nil ? "Add Habit" : "Save Changes")
                                 .font(.system(size: 17, weight: .bold))
                                 .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity)
@@ -121,7 +141,7 @@ struct AddHabitView: View {
                     .padding(.bottom, 32)
                 }
             }
-            .navigationTitle("New Habit")
+            .navigationTitle(editingHabit == nil ? "New Habit" : "Edit Habit")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -367,25 +387,40 @@ struct AddHabitView: View {
     // MARK: - Save
 
     private func saveHabit() {
-        if profile?.isPremium != true && activeHabits.count >= UserProfile.freeHabitLimit {
-            showPaywall = true
-            return
-        }
-
         let finalEmoji = customEmojiText.isEmpty ? emoji : customEmojiText
-        let habit = Habit(name: name, emoji: finalEmoji, sortOrder: activeHabits.count)
 
-        // Duration
-        switch durationOption {
-        case .forever:
-            habit.endDate = nil
-        case .custom:
-            habit.endDate = Calendar.current.startOfDay(for: customEndDate)
-        default:
-            habit.endDate = durationOption.computedEndDate
+        if let existing = editingHabit {
+            // --- Edit mode: mutate existing habit in-place ---
+            existing.name = name
+            existing.emoji = finalEmoji
+            applyDuration(to: existing)
+            applyReminder(to: existing)
+            try? modelContext.save()
+            dismiss()
+        } else {
+            // --- Create mode: paywall check then insert ---
+            if profile?.isPremium != true && activeHabits.count >= UserProfile.freeHabitLimit {
+                showPaywall = true
+                return
+            }
+            let habit = Habit(name: name, emoji: finalEmoji, sortOrder: activeHabits.count)
+            applyDuration(to: habit)
+            applyReminder(to: habit)
+            modelContext.insert(habit)
+            try? modelContext.save()
+            dismiss()
         }
+    }
 
-        // Reminder
+    private func applyDuration(to habit: Habit) {
+        switch durationOption {
+        case .forever: habit.endDate = nil
+        case .custom:  habit.endDate = Calendar.current.startOfDay(for: customEndDate)
+        default:       habit.endDate = durationOption.computedEndDate
+        }
+    }
+
+    private func applyReminder(to habit: Habit) {
         if enableReminder {
             habit.reminderTime = reminderTime
             habit.reminderDays = Array(reminderDays).sorted()
@@ -401,11 +436,13 @@ struct AddHabitView: View {
                     leadMinutesList: Array(reminderLeadMinutes).sorted()
                 )
             }
+        } else {
+            // Clear any previously scheduled notifications
+            habit.reminderTime = nil
+            habit.reminderDays = []
+            habit.reminderLeadMinutesList = []
+            NotificationManager.shared.removeHabitReminder(habitID: habit.id.uuidString)
         }
-
-        modelContext.insert(habit)
-        try? modelContext.save()
-        dismiss()
     }
 }
 
