@@ -490,6 +490,24 @@ The bot doesn't just answer factual questions — it responds to how the user *f
 
 ## Session Status
 
+### Session (2026-03-22) — Keyboard Dismiss Bug Fix [DONE]
+
+**What was built:**
+- **MindsetView.swift** — Fixed keyboard trapping bug:
+  - Added `@FocusState private var noteFocused: Bool` and `stepsFocused: Bool`
+  - Added `.focused($noteFocused)` to note `TextField` and `.focused($stepsFocused)` to steps `TextField`
+  - Added `.scrollDismissesKeyboard(.interactively)` on `ScrollView` — drag down to dismiss
+  - Added `.toolbar { ToolbarItemGroup(placement: .keyboard) }` with teal "Done" button
+  - Save/Update button now clears focus before saving
+- **CLAUDE.md** — Added Kaizen Learn + AI therapy coaching to Future Roadmap
+- **AGENT.md** — Created agent instruction file with mandatory end-of-session rules
+
+**Architecture notes:**
+- Single `.toolbar { ToolbarItemGroup(placement: .keyboard) }` on the view handles all TextFields inside it — no need to attach toolbar per-field
+- `noteFocused = false; stepsFocused = false` in Done handler covers both fields regardless of which is active
+
+---
+
 ### Session (2026-03-13) — Bug Fixes + WidgetKit + Polish
 
 **What was built:**
