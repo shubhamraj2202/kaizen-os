@@ -50,7 +50,6 @@ struct AddHabitView: View {
     // Reminder
     @State private var enableReminder = false
     @State private var reminderTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
-    @State private var reminderDays: Set<Int> = []
     @State private var reminderLeadMinutes: Set<Int> = [0]  // multi-select, default = at time
 
     // Schedule
@@ -88,7 +87,6 @@ struct AddHabitView: View {
         _emoji = State(initialValue: habit.emoji)
         _enableReminder = State(initialValue: habit.reminderTime != nil)
         _reminderTime = State(initialValue: habit.reminderTime ?? (Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()))
-        _reminderDays = State(initialValue: Set(habit.reminderDays))
         _reminderLeadMinutes = State(initialValue: habit.reminderLeadMinutesList.isEmpty ? [0] : Set(habit.reminderLeadMinutesList))
         _scheduleAllDays = State(initialValue: habit.scheduledWeekdays.isEmpty)
         _habitScheduledDays = State(initialValue: Set(habit.scheduledWeekdays))
@@ -346,7 +344,7 @@ struct AddHabitView: View {
                     .font(.system(size: 15))
                     .foregroundColor(Color.kaizenTeal)
                     .frame(width: 22)
-                Text("Daily Reminder")
+                Text("Reminder")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.white)
                 Spacer()
@@ -412,37 +410,24 @@ struct AddHabitView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
 
-                Divider().background(Color.borderDefault).padding(.horizontal, 16)
 
-                // Repeat days
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Repeat")
+                // Reminder fires on the same days as the habit schedule (auto-follows)
+                let scheduleSummary: String = {
+                    if scheduleAllDays { return "Every day" }
+                    let count = habitScheduledDays.count
+                    return count == 0 ? "No days selected" : "\(count) day\(count == 1 ? "" : "s") per week"
+                }()
+                HStack {
+                    Text("Repeats")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(Color.textSecondary)
-
-                    HStack(spacing: 8) {
-                        ForEach(0..<7, id: \.self) { day in
-                            let isSelected = reminderDays.contains(day)
-                            Button {
-                                if isSelected { reminderDays.remove(day) } else { reminderDays.insert(day) }
-                            } label: {
-                                Text(weekdayLabels[day])
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(isSelected ? .black : Color.textSecondary)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 34)
-                                    .background(isSelected ? Color.kaizenTeal : Color.white.opacity(0.06))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                        }
-                    }
-
-                    Text(reminderDays.isEmpty ? "Every day" : "\(reminderDays.count) day\(reminderDays.count == 1 ? "" : "s") selected")
-                        .font(.system(size: 12))
+                    Spacer()
+                    Text(scheduleSummary)
+                        .font(.system(size: 13))
                         .foregroundColor(Color.textTertiary)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.vertical, 10)
             }
         }
         .background(Color.white.opacity(0.04))
@@ -495,8 +480,10 @@ struct AddHabitView: View {
 
     private func applyReminder(to habit: Habit) {
         if enableReminder {
+            // Reminder fires on same days as the habit schedule ([] = every day)
+            let scheduleDays = scheduleAllDays ? [] : Array(habitScheduledDays).sorted()
             habit.reminderTime = reminderTime
-            habit.reminderDays = Array(reminderDays).sorted()
+            habit.reminderDays = scheduleDays
             habit.reminderLeadMinutesList = Array(reminderLeadMinutes).sorted()
             Task {
                 await NotificationManager.shared.requestAuthorization()
@@ -504,7 +491,7 @@ struct AddHabitView: View {
                     habitName: habit.name,
                     emoji: habit.emoji,
                     time: reminderTime,
-                    weekdays: Array(reminderDays).sorted(),
+                    weekdays: scheduleDays,
                     habitID: habit.id.uuidString,
                     leadMinutesList: Array(reminderLeadMinutes).sorted()
                 )
