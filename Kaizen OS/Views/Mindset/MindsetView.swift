@@ -25,6 +25,9 @@ struct MindsetView: View {
     // Daily note / scratchpad
     @State private var noteText: String = ""
 
+    @FocusState private var noteFocused: Bool
+    @FocusState private var stepsFocused: Bool
+
     private var profile: UserProfile? { profiles.first }
 
     private var todayLog: MindsetLog? {
@@ -68,6 +71,8 @@ struct MindsetView: View {
                     MindsetSlider(label: "Mood", value: $mood, color: .kaizenPurple)
 
                     Button {
+                        noteFocused = false
+                        stepsFocused = false
                         saveLog()
                     } label: {
                         Text(todayLog != nil ? "Update" : "Save")
@@ -109,6 +114,7 @@ struct MindsetView: View {
                         .foregroundStyle(.white)
                         .lineLimit(3...8)
                         .tint(Color.kaizenOrange)
+                        .focused($noteFocused)
                 }
                 .padding(16)
                 .background(Color.kaizenOrange.opacity(0.06))
@@ -203,6 +209,7 @@ struct MindsetView: View {
                             .multilineTextAlignment(.trailing)
                             .keyboardType(.numberPad)
                             .frame(width: 80)
+                            .focused($stepsFocused)
                     }
                 }
                 .padding(16)
@@ -240,8 +247,20 @@ struct MindsetView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(Color.bgPrimary)
         .onAppear { loadTodayValues() }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    noteFocused = false
+                    stepsFocused = false
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color.kaizenTeal)
+            }
+        }
     }
 
     // MARK: - Load / Save
