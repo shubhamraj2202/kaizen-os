@@ -341,16 +341,26 @@ KaizenOS/
 - Build 7 resubmitted — awaiting result
 
 ### Next priorities (approved, pending implementation)
-1. **Keyboard dismiss bug** — note TextField traps keyboard, tabs disappear; fix with @FocusState + Done toolbar button + .scrollDismissesKeyboard
-2. **Move Today's Note to Dashboard only** — remove from MindsetView, make inline-editable on Dashboard card
-3. **Enhanced Mindset** — dynamic rotating questions based on mood/energy/focus scores + ◀ ▶ past-day editing
-4. **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month
-5. **Task history & summary** — completed tasks grouped by week, category breakdown, overall stats
-6. **Fix Tasks tab month display** — investigate and fix UI glitch in month calendar
-7. **In-app Kaizen education** — rotating "Today's Insight" card on Dashboard + Help sheet (see roadmap)
-8. App Groups finalisation (widget live data)
-9. Onboarding flow
-10. App Store screenshots
+
+Legend: ✅ Done | 🐛 Known bug under feature | 🔲 Pending
+
+| # | Feature | Status |
+|---|---------|--------|
+| 1 | **Keyboard dismiss bug** — note TextField traps keyboard, tabs disappear | ✅ Done (2026-03-22) |
+| 2 | **Move Today's Note to Dashboard only** — remove from MindsetView, make inline-editable on Dashboard card | 🔲 |
+| 3 | **Enhanced Mindset** — dynamic rotating questions based on mood/energy/focus scores + ◀ ▶ past-day editing | 🔲 |
+| 4 | **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month | 🔲 |
+| 5 | **Task history & summary** — completed tasks grouped by week, category breakdown, overall stats | 🔲 |
+| 6 | **Fix Tasks tab month display** — investigate and fix UI glitch in month calendar | 🔲 |
+| 7 | **In-app Kaizen education** — rotating "Today's Insight" card on Dashboard + Help sheet | 🔲 |
+| 8 | App Groups finalisation (widget live data) | 🔲 manual Xcode |
+| 9 | Onboarding flow | 🔲 |
+| 10 | App Store screenshots | 🔲 manual |
+
+**How this table works:**
+- Mark ✅ Done + date when a feature ships
+- Add `🐛 Bug: [description] (found YYYY-MM-DD)` under a row when a bug is discovered after shipping
+- Update to ✅ Fixed when the bug is resolved, with the fix date
 
 ---
 

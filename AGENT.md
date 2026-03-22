@@ -41,6 +41,8 @@ No placeholders. No TODOs. Finish what you start.
 18. **Always git push** after committing — so TestFlight build triggers automatically
 19. **Always update CLAUDE.md** — add a session log entry under "Session Status"
 20. **Always update FEATURES.md** — if any user-facing feature was added, changed, or removed
+21. **Always mark features done** — update the "Next priorities" table in CLAUDE.md: mark ✅ Done + date when shipped
+22. **Always log bugs under features** — if a bug is found in a shipped feature, add `🐛 Bug: [description] (found YYYY-MM-DD)` under that row; when fixed, update to ✅ Fixed + date
 
 ---
 
