@@ -25,6 +25,21 @@ struct DashboardView: View {
         }?.note
     }
 
+    // MARK: - Note save
+
+    private func saveNote(_ text: String) {
+        let today = Calendar.current.startOfDay(for: Date())
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let existing = mindsetLogs.first(where: { Calendar.current.startOfDay(for: $0.date) == today }) {
+            existing.note = trimmed.isEmpty ? nil : trimmed
+        } else {
+            let log = MindsetLog(date: Date(), energy: 50, focus: 50, mood: 50)
+            log.note = trimmed.isEmpty ? nil : trimmed
+            modelContext.insert(log)
+        }
+        try? modelContext.save()
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -66,10 +81,8 @@ struct DashboardView: View {
                     StatCard(icon: "⚡", value: "\(totalWins)", label: "Total Wins", color: .kaizenPurple)
                 }
 
-                // Today's Note card
-                TodayNoteCard(note: todayNote) {
-                    selectedTab = 3
-                }
+                // Today's Note card — inline editable
+                TodayNoteCard(savedNote: todayNote, onSave: saveNote)
 
                 // Today's Habits preview
                 VStack(spacing: 8) {
@@ -311,51 +324,94 @@ private struct TagPill: View {
     }
 }
 
-// MARK: - Today's Note Card
+// MARK: - Today's Note Card (inline editable)
 
 private struct TodayNoteCard: View {
-    let note: String?
-    let onTap: () -> Void
+    let savedNote: String?
+    let onSave: (String) -> Void
+
+    @State private var text: String = ""
+    @State private var isEditing: Bool = false
+    @FocusState private var focused: Bool
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header row
+            HStack {
                 Image(systemName: "note.text")
-                    .font(.system(size: 15))
-                    .foregroundColor(Color.kaizenOrange)
-                    .padding(.top, 1)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("TODAY'S NOTE")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color.kaizenOrange.opacity(0.7))
-                        .tracking(0.6)
-                    if let note, !note.isEmpty {
-                        Text(note)
-                            .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.85))
-                            .lineLimit(3)
-                            .multilineTextAlignment(.leading)
-                    } else {
-                        Text("Tap to add a note for today…")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color.textTertiary)
-                    }
-                }
-                Spacer()
-                Image(systemName: "pencil")
                     .font(.system(size: 12))
-                    .foregroundColor(Color.textTertiary)
+                    .foregroundColor(Color.kaizenOrange)
+                Text("TODAY'S NOTE")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color.kaizenOrange.opacity(0.7))
+                    .tracking(0.6)
+                Spacer()
+                if isEditing {
+                    Button("Done") {
+                        focused = false
+                        isEditing = false
+                        onSave(text)
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color.kaizenOrange)
+                } else {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.textTertiary)
+                }
             }
-            .padding(16)
-            .background(Color.kaizenOrange.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.kaizenOrange.opacity(note != nil ? 0.25 : 0.1), lineWidth: 1)
-            )
+
+            // Body
+            if isEditing {
+                TextField("Brain dump, reminders, anything on your mind…", text: $text, axis: .vertical)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.white)
+                    .lineLimit(3...8)
+                    .tint(Color.kaizenOrange)
+                    .focused($focused)
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Done") {
+                                focused = false
+                                isEditing = false
+                                onSave(text)
+                            }
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color.kaizenOrange)
+                        }
+                    }
+            } else {
+                if let note = savedNote, !note.isEmpty {
+                    Text(note)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(4)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Text("Tap to add a note for today…")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color.textTertiary)
+                }
+            }
         }
-        .buttonStyle(.plain)
+        .padding(16)
+        .background(Color.kaizenOrange.opacity(isEditing ? 0.09 : 0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.kaizenOrange.opacity(isEditing ? 0.35 : (savedNote != nil ? 0.2 : 0.08)), lineWidth: 1)
+        )
+        .onTapGesture {
+            guard !isEditing else { return }
+            text = savedNote ?? ""
+            isEditing = true
+            focused = true
+        }
+        .onChange(of: savedNote) { _, new in
+            if !isEditing { text = new ?? "" }
+        }
     }
 }
 

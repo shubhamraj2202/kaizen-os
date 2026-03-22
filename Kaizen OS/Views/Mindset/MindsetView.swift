@@ -22,10 +22,6 @@ struct MindsetView: View {
     @State private var stepsText: String = ""
     @State private var isSyncingHealth = false
 
-    // Daily note / scratchpad
-    @State private var noteText: String = ""
-
-    @FocusState private var noteFocused: Bool
     @FocusState private var stepsFocused: Bool
 
     private var profile: UserProfile? { profiles.first }
@@ -71,7 +67,6 @@ struct MindsetView: View {
                     MindsetSlider(label: "Mood", value: $mood, color: .kaizenPurple)
 
                     Button {
-                        noteFocused = false
                         stepsFocused = false
                         saveLog()
                     } label: {
@@ -96,32 +91,6 @@ struct MindsetView: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 24)
                         .stroke(Color.kaizenPurple.opacity(0.25), lineWidth: 1)
-                )
-
-                // Daily Scratchpad
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Image(systemName: "note.text")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color.kaizenOrange)
-                        Text("TODAY'S NOTE")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(Color.textTertiary)
-                            .tracking(0.8)
-                    }
-                    TextField("Brain dump, reminders, anything on your mind…", text: $noteText, axis: .vertical)
-                        .font(.system(size: 14))
-                        .foregroundStyle(.white)
-                        .lineLimit(3...8)
-                        .tint(Color.kaizenOrange)
-                        .focused($noteFocused)
-                }
-                .padding(16)
-                .background(Color.kaizenOrange.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(noteText.isEmpty ? Color.borderDefault : Color.kaizenOrange.opacity(0.3), lineWidth: 1)
                 )
 
                 // Health section
@@ -254,7 +223,6 @@ struct MindsetView: View {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Done") {
-                    noteFocused = false
                     stepsFocused = false
                 }
                 .font(.system(size: 14, weight: .semibold))
@@ -273,13 +241,11 @@ struct MindsetView: View {
             sleepHours = log.sleepHours ?? 7.0
             wakeTime = log.wakeTime ?? (Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date())
             stepsText = log.stepsManual.map { "\($0)" } ?? ""
-            noteText = log.note ?? ""
         }
     }
 
     private func saveLog() {
         let stepsVal = Int(stepsText)
-        let noteVal = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
         if let existing = todayLog {
             existing.energy = Int(energy)
             existing.focus = Int(focus)
@@ -287,13 +253,11 @@ struct MindsetView: View {
             existing.sleepHours = sleepHours
             existing.wakeTime = wakeTime
             existing.stepsManual = stepsVal
-            existing.note = noteVal.isEmpty ? nil : noteVal
         } else {
             let log = MindsetLog(date: Date(), energy: Int(energy), focus: Int(focus), mood: Int(mood))
             log.sleepHours = sleepHours
             log.wakeTime = wakeTime
             log.stepsManual = stepsVal
-            log.note = noteVal.isEmpty ? nil : noteVal
             modelContext.insert(log)
         }
         try? modelContext.save()
