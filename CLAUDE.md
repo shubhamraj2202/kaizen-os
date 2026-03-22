@@ -347,7 +347,7 @@ Legend: ✅ Done | 🐛 Known bug under feature | 🔲 Pending
 | # | Feature | Status |
 |---|---------|--------|
 | 1 | **Keyboard dismiss bug** — note TextField traps keyboard, tabs disappear | ✅ Done (2026-03-22) |
-| 2 | **Move Today's Note to Dashboard only** — remove from MindsetView, make inline-editable on Dashboard card | 🔲 |
+| 2 | **Move Today's Note to Dashboard only** — remove from MindsetView, make inline-editable on Dashboard card | ✅ Done (2026-03-22) |
 | 3 | **Enhanced Mindset** — dynamic rotating questions based on mood/energy/focus scores + ◀ ▶ past-day editing | 🔲 |
 | 4 | **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month | 🔲 |
 | 5 | **Task history & summary** — completed tasks grouped by week, category breakdown, overall stats | 🔲 |
@@ -499,6 +499,25 @@ The bot doesn't just answer factual questions — it responds to how the user *f
 ---
 
 ## Session Status
+
+### Session (2026-03-22) — Today's Note → Dashboard inline edit [DONE]
+
+**What was built:**
+- **DashboardView.swift** — `TodayNoteCard` now fully inline-editable:
+  - Tap card → expands into `TextField` with orange tint, border and bg brighten
+  - "Done" button appears in card header row + keyboard toolbar; saves and collapses
+  - `saveNote(_ text:)` creates today's `MindsetLog` if none exists (energy/focus/mood default 50) so note is never orphaned
+  - `onChange(of: savedNote)` syncs if another view changes the note while not editing
+- **MindsetView.swift** — Removed Daily Scratchpad section entirely:
+  - Removed `noteText` state, `noteFocused` FocusState
+  - Removed note load from `loadTodayValues()` and note save from `saveLog()`
+  - Saving sliders/health data no longer touches the note field (Dashboard note edits safe)
+
+**Architecture notes:**
+- `TodayNoteCard` is self-contained — owns its own `@State text`, `@State isEditing`, `@FocusState focused`; parent only provides `savedNote: String?` and `onSave: (String) -> Void`
+- Note always lives on `MindsetLog.note`; creating a stub log (50/50/50) when note is added without a mindset check-in is intentional — user can update scores later
+
+---
 
 ### Session (2026-03-22) — Keyboard Dismiss Bug Fix [DONE]
 

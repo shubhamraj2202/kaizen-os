@@ -135,10 +135,11 @@ Switch between three views using the toggle at the top:
 ## Today's Note
 
 - A freeform daily scratchpad — brain dump, reminders, anything on your mind
-- Visible as a card on the **Dashboard** (orange accent)
-- Shows today's note text, or "Tap to add a note…" if empty
-- Tap the card to write or edit
-- One note per day, linked to that day's mindset log
+- Lives on the **Dashboard** as an orange card (no need to go to Mindset tab)
+- Tap the card to expand it inline and start typing — no separate screen
+- "Done" button (or drag the scroll view) dismisses the keyboard and saves instantly
+- Shows a preview of your note when not editing; "Tap to add a note…" if empty
+- One note per day, automatically linked to that day's mindset log
 
 ---
 
