@@ -347,9 +347,10 @@ KaizenOS/
 4. **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month
 5. **Task history & summary** — completed tasks grouped by week, category breakdown, overall stats
 6. **Fix Tasks tab month display** — investigate and fix UI glitch in month calendar
-7. App Groups finalisation (widget live data)
-8. Onboarding flow
-9. App Store screenshots
+7. **In-app Kaizen education** — rotating "Today's Insight" card on Dashboard + Help sheet (see roadmap)
+8. App Groups finalisation (widget live data)
+9. Onboarding flow
+10. App Store screenshots
 
 ---
 
@@ -387,6 +388,82 @@ A conversational AI assistant embedded in the Dashboard. Powered by **Gemini AI*
 - AI responses include quick-tap follow-ups ("Tell me more", "Show chart")
 
 **Design approval required before building.** Do not implement until user reviews wireframes.
+
+---
+
+### In-App Education — "Kaizen Learn"
+Static educational content teaching users the philosophy and science behind what they're building. No AI required — pure curated content.
+
+**Why it matters:**
+Users who understand *why* habits work are far more likely to stick with them. Education = retention.
+
+**Content areas:**
+- **What is Kaizen?** — Japanese philosophy of continuous 1% improvement; small consistent actions > big sporadic efforts
+- **Habit science** — habit loop (cue → routine → reward), neuroplasticity, why 21 days is a myth (research says 66 days average)
+- **Streak psychology** — why streaks work, how to handle breaks without quitting ("never miss twice" rule)
+- **How to pick a habit** — start smaller than you think, anchor to existing routines, measure the right thing
+- **Energy management** — ultradian rhythms, why tracking energy/focus/mood matters, sleep as the foundation
+- **Category tips** — specific advice per habit category (Health, Fitness, Focus, Finance, etc.)
+
+**Delivery options (choose one before building):**
+- Option A: "Today's Insight" rotating card on Dashboard — one tip per day from a curated pool of ~60 tips
+- Option B: Dedicated "Learn" tab (replaces or extends Settings tab)
+- Option C: Contextual tips — show relevant tip when user adds a habit in a category
+- Option D: All three progressively
+
+**Technical approach:**
+- All content hardcoded as Swift string arrays — no network, no CMS
+- Tips rotate daily using `Date().dayOfYear % tips.count` — same tip all day, different each day
+- No new SwiftData model needed
+
+**Status: PLANNED — needs design decision on delivery method before building.**
+
+---
+
+### AI Bot — Therapy & Coaching Layer
+Extension of Kaizen Bot beyond data queries into emotional support and habit coaching. Powered by **Gemini AI**.
+
+**What makes this different from pure data queries:**
+The bot doesn't just answer factual questions — it responds to how the user *feels* and offers supportive, evidence-based guidance.
+
+**Therapy-adjacent features (NOT a replacement for real therapy):**
+- Reads today's mindset score + daily note before every conversation
+- If energy/mood is low: asks a follow-up — *"What's making today feel heavy?"*
+- Offers CBT-style reframing: *"You've felt this way before — on March 3rd you had the same score and bounced back with a great gym session the next day"*
+- Celebrates wins with context: *"14 gym sessions this month — that's your best month ever"*
+- Pattern-based nudges: *"You tend to have low focus on Thursdays — want to try a lighter task list on those days?"*
+- Guided weekly reflection: *"It's Sunday — want to do a 2-minute review of your week?"*
+- Habit coaching: suggests micro-adjustments based on completion data
+
+**Persona:**
+- Warm, non-judgmental, brief
+- Never catastrophises or lectures
+- Always ends with an actionable suggestion or question
+- System prompt includes: "You are Kaizen, a supportive daily coach. You have access to the user's habit and mindset data. You are NOT a therapist or medical professional. Always recommend professional help for serious mental health concerns."
+
+**Safety guardrails (non-negotiable):**
+- If user mentions self-harm, crisis language, or extreme distress → bot immediately responds with crisis resources and redirects to professional help
+- Disclaimer shown on first use: "I'm an AI coach, not a therapist. For mental health support, please speak with a qualified professional."
+- All conversations stored locally only — never sent to any server except as part of the Gemini API call (Gemini API processes and discards, does not store)
+
+**Technical approach:**
+- Same `GeminiManager.swift` as data query bot — different system prompt persona
+- Context payload includes: last 7 days mindset scores, today's note, current streaks, recent completions
+- Token budget: ~800 tokens of context + user message → Gemini response
+- Two modes in the chat UI: "Ask Data" (factual queries) and "Talk" (coaching/reflection) — or unified with the bot deciding which mode based on input
+
+**New model needed:**
+- `AIMessage.swift` — individual chat message (role: user/assistant, content, timestamp)
+- `AISession.swift` — groups messages by date, links to that day's MindsetLog snapshot
+
+**UI:**
+- Same chat sheet as data bot — unified interface
+- Bot automatically opens in coaching mode if user's mindset score today is below 50
+- "How are you feeling today?" as the default opening prompt when mood data exists
+
+**Design approval required before building.** Needs wireframes + safety review before any code.
+
+**Status: PLANNED — do not implement until approved.**
 
 ---
 
