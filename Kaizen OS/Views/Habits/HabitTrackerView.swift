@@ -145,6 +145,19 @@ struct HabitTrackerView: View {
                                     Label("Archive", systemImage: "archivebox")
                                 }
                             }
+                            .contextMenu {
+                                Button {
+                                    editingHabit = habit
+                                } label: {
+                                    Label("Edit Habit", systemImage: "pencil")
+                                }
+                                Button(role: .destructive) {
+                                    habit.isActive = false
+                                    try? modelContext.save()
+                                } label: {
+                                    Label("Archive", systemImage: "archivebox")
+                                }
+                            }
                         }
 
                         // Analysis section
