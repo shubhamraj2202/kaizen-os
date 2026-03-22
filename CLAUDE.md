@@ -352,10 +352,11 @@ Legend: ✅ Done | 🐛 Known bug under feature | 🔲 Pending
 | 4 | **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month | 🔲 |
 | 5 | **Task history & summary** — completed tasks grouped by week, category breakdown, overall stats | 🔲 |
 | 6 | **Fix Tasks tab month display** — investigate and fix UI glitch in month calendar | 🔲 |
-| 7 | **In-app Kaizen education** — rotating "Today's Insight" card on Dashboard + Help sheet | 🔲 |
-| 8 | App Groups finalisation (widget live data) | 🔲 manual Xcode |
-| 9 | Onboarding flow | 🔲 |
-| 10 | App Store screenshots | 🔲 manual |
+| 7 | **Personalised Dashboard header** — greeting with user name + avatar emoji picker | ✅ Done (2026-03-22) |
+| 8 | **In-app Kaizen education** — rotating "Today's Insight" card on Dashboard + Help sheet | 🔲 |
+| 9 | App Groups finalisation (widget live data) | 🔲 manual Xcode |
+| 10 | Onboarding flow | 🔲 |
+| 11 | App Store screenshots | 🔲 manual |
 
 **How this table works:**
 - Mark ✅ Done + date when a feature ships
@@ -499,6 +500,22 @@ The bot doesn't just answer factual questions — it responds to how the user *f
 ---
 
 ## Session Status
+
+### Session (2026-03-22) — Personalised Dashboard header + avatar picker [DONE]
+
+**What was built:**
+- **UserProfile.swift** — Added `avatarEmoji: String` field (default `""` = use initials; SwiftData migrates automatically)
+- **DashboardView.swift** — Replaced static "改善 Kaizen OS" header with:
+  - Time-based greeting: "Good morning/afternoon/evening/Hey, [Name]!" — reads `UserProfile.name`; falls back to "there" if empty
+  - Avatar button (46×46, teal→purple gradient rounded rect): shows chosen emoji at 24pt, or user's first initial at 18pt bold if no emoji set
+  - Tapping avatar opens `AvatarPickerSheet` as `.medium` sheet
+- **AvatarPickerSheet** (private struct in DashboardView) — 18 emoji avatars in 3 rows (people, animals, fun); selected emoji highlighted with teal border; preview circle shows current state; "Use my initials instead" resets to `""` (initials mode); saves directly to `UserProfile.avatarEmoji` and dismisses
+
+**Architecture notes:**
+- `avatarIsEmoji` computed property gates font size (emoji vs letter) in the button
+- `AvatarPickerSheet` mutates `profile?.avatarEmoji` directly — no extra save needed (SwiftData `@Model` tracks changes automatically); dismiss triggers re-render via `@Query`
+
+---
 
 ### Session (2026-03-22) — Today's Note → Dashboard inline edit [DONE]
 

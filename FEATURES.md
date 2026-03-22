@@ -164,9 +164,11 @@ Switch between three views using the toggle at the top:
 
 ## Dashboard
 
+- **Personalised greeting** — "Good morning, [Your Name]!" changes based on time of day
+- **Avatar** — tap the avatar in the top-right to choose from 18 emoji (people, animals, fun icons); shows your initial if no emoji is picked
 - **Day score ring** — percentage of today's habits done, with a glow effect
 - **Stats row** — Best Streak (🔥), This Week % (📊), Total Wins (⚡)
-- **Today's Note card** — quick view of your daily note, tap to edit
+- **Today's Note card** — tap to write inline, "Done" saves and collapses
 - **Today's Habits preview** — tap any habit to toggle it without leaving Dashboard
 - **Mindset CTA** — "Log now" banner to jump straight to check-in
 
