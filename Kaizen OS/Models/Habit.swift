@@ -20,6 +20,7 @@ final class Habit {
     var reminderLeadMinutesList: [Int]  // each value = one notification offset (e.g. [0, 10])
     var scheduledWeekdays: [Int]    // empty = every day; non-empty = only on those days (0=Sun…6=Sat)
     var endDate: Date?              // nil = unlimited
+    var pausedUntil: Date?          // nil = not paused; non-nil = paused until (and including) this date
 
     @Relationship(deleteRule: .cascade)
     var entries: [HabitEntry] = []
@@ -37,6 +38,12 @@ final class Habit {
         self.reminderLeadMinutesList = []
         self.scheduledWeekdays = []
         self.endDate = nil
+        self.pausedUntil = nil
+    }
+
+    var isPaused: Bool {
+        guard let until = pausedUntil else { return false }
+        return Calendar.current.startOfDay(for: until) >= Calendar.current.startOfDay(for: Date())
     }
 
     // Returns "18d left", "1d left", or "🎉 Done!" when habit has an end date
@@ -51,7 +58,7 @@ final class Habit {
     }
 
     // Returns true if this habit is scheduled on the given calendar weekday (0=Sun…6=Sat)
-    private func isScheduled(on date: Date) -> Bool {
+    func isScheduled(on date: Date) -> Bool {
         guard !scheduledWeekdays.isEmpty else { return true }  // empty = every day
         let weekday = Calendar.current.component(.weekday, from: date) - 1  // 1-based → 0-based
         return scheduledWeekdays.contains(weekday)
@@ -60,25 +67,20 @@ final class Habit {
     var currentStreak: Int {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let completedDates = Set(
-            entries
-                .filter { $0.isCompleted }
-                .map { calendar.startOfDay(for: $0.date) }
-        )
+        let completedDates = Set(entries.filter { $0.isCompleted }.map { calendar.startOfDay(for: $0.date) })
+        let skippedDates  = Set(entries.filter { $0.isSkipped  }.map { calendar.startOfDay(for: $0.date) })
         var streak = 0
         var checkDate = today
-        // Walk backwards, skipping rest days, breaking only on a missed scheduled day
         for _ in 0..<365 {
             if isScheduled(on: checkDate) {
                 if completedDates.contains(checkDate) {
                     streak += 1
+                } else if skippedDates.contains(checkDate) {
+                    // Intentionally skipped — transparent, doesn't add to streak, doesn't break it
                 } else {
-                    // Missed a scheduled day — streak ends
-                    // Exception: if checkDate is today and habit not done yet, don't penalise
-                    if checkDate != today { break }
+                    if checkDate != today { break }  // missed; today's still in progress so don't penalise
                 }
             }
-            // Move to previous day
             guard let prev = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
             checkDate = prev
         }
@@ -87,14 +89,10 @@ final class Habit {
 
     var longestStreak: Int {
         let calendar = Calendar.current
-        // Get all scheduled days from habit creation to today, walk forward
         let today = calendar.startOfDay(for: Date())
         let start = calendar.startOfDay(for: createdAt)
-        let completedDates = Set(
-            entries
-                .filter { $0.isCompleted }
-                .map { calendar.startOfDay(for: $0.date) }
-        )
+        let completedDates = Set(entries.filter { $0.isCompleted }.map { calendar.startOfDay(for: $0.date) })
+        let skippedDates  = Set(entries.filter { $0.isSkipped  }.map { calendar.startOfDay(for: $0.date) })
         var longest = 0
         var current = 0
         var checkDate = start
@@ -103,11 +101,12 @@ final class Habit {
                 if completedDates.contains(checkDate) {
                     current += 1
                     longest = max(longest, current)
+                } else if skippedDates.contains(checkDate) {
+                    // Skip over — doesn't reset streak
                 } else {
-                    current = 0  // missed a scheduled day
+                    current = 0
                 }
             }
-            // Skip to next day
             guard let next = calendar.date(byAdding: .day, value: 1, to: checkDate) else { break }
             checkDate = next
         }
@@ -125,11 +124,12 @@ final class Habit {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         guard let start = calendar.date(byAdding: .day, value: -29, to: today) else { return 0 }
-        // Count only days the habit was actually scheduled in the window
+        let skippedDates = Set(entries.filter { $0.isSkipped }.map { calendar.startOfDay(for: $0.date) })
+        // Count scheduled non-skipped days as denominator
         var scheduledCount = 0
         var checkDate = start
         while checkDate <= today {
-            if isScheduled(on: checkDate) { scheduledCount += 1 }
+            if isScheduled(on: checkDate) && !skippedDates.contains(checkDate) { scheduledCount += 1 }
             guard let next = calendar.date(byAdding: .day, value: 1, to: checkDate) else { break }
             checkDate = next
         }
