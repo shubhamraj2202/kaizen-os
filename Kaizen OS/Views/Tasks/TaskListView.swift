@@ -9,6 +9,7 @@ import SwiftData
 private enum CalendarMode: String, CaseIterable {
     case week = "Week"
     case month = "Month"
+    case year = "Year"
 }
 
 struct TaskListView: View {
@@ -99,6 +100,67 @@ struct TaskListView: View {
         return f.string(from: calendarAnchor)
     }
 
+    // MARK: - Year Helpers
+
+    private var yearStart: Date {
+        var comps = cal.dateComponents([.year], from: calendarAnchor)
+        comps.month = 1; comps.day = 1
+        return cal.date(from: comps)!
+    }
+
+    private var yearLabel: String {
+        let f = DateFormatter(); f.dateFormat = "yyyy"
+        return f.string(from: calendarAnchor)
+    }
+
+    // 7-row × N-col matrix of dates (nil = padding). Week starts Monday.
+    private var yearColumns: [[Date?]] {
+        // Day-of-week offset so column 0 = Monday
+        let startWeekday = (cal.component(.weekday, from: yearStart) + 5) % 7 // Mon=0
+        // Total day slots: 366 days max + leading padding
+        let daysInYear = cal.range(of: .day, in: .year, for: yearStart)!.count
+        let totalSlots = startWeekday + daysInYear
+        let numCols = Int(ceil(Double(totalSlots) / 7.0))
+        var cols: [[Date?]] = Array(repeating: Array(repeating: nil, count: 7), count: numCols)
+        for slot in 0..<daysInYear {
+            let idx = startWeekday + slot
+            let col = idx / 7
+            let row = idx % 7
+            cols[col][row] = cal.date(byAdding: .day, value: slot, to: yearStart)
+        }
+        return cols
+    }
+
+    // Returns (column index, month abbreviation) for month labels
+    private var yearMonthLabels: [(col: Int, label: String)] {
+        let f = DateFormatter(); f.dateFormat = "MMM"
+        var result: [(Int, String)] = []
+        var current: Date? = nil
+        let startWeekday = (cal.component(.weekday, from: yearStart) + 5) % 7
+        let daysInYear = cal.range(of: .day, in: .year, for: yearStart)!.count
+        for slot in 0..<daysInYear {
+            let date = cal.date(byAdding: .day, value: slot, to: yearStart)!
+            let month = cal.component(.month, from: date)
+            if current == nil || cal.component(.month, from: current!) != month {
+                current = date
+                let col = (startWeekday + slot) / 7
+                result.append((col, f.string(from: date)))
+            }
+        }
+        return result
+    }
+
+    private func yearTaskCellColor(for date: Date) -> Color {
+        let dayStart = cal.startOfDay(for: date)
+        let dayEnd = cal.date(byAdding: .day, value: 1, to: dayStart)!
+        let dayTasks = allTasks.filter { $0.date >= dayStart && $0.date < dayEnd }
+        guard !dayTasks.isEmpty else { return Color.white.opacity(0.04) }
+        let done = dayTasks.filter(\.isCompleted).count
+        if done == dayTasks.count { return Color.kaizenTeal }
+        if done > 0 { return Color.kaizenTeal.opacity(0.45) }
+        return Color.kaizenOrange.opacity(0.3)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -122,10 +184,10 @@ struct TaskListView: View {
                     .padding(.top, 8)
 
                     // Calendar
-                    if calendarMode == .week {
-                        weekCalendarView
-                    } else {
-                        monthCalendarView
+                    switch calendarMode {
+                    case .week:  weekCalendarView
+                    case .month: monthCalendarView
+                    case .year:  yearCalendarView
                     }
 
                     // Selected date label
@@ -389,6 +451,138 @@ struct TaskListView: View {
                             }
                         }
                     }
+                }
+            }
+        }
+        .padding(14)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.borderDefault, lineWidth: 1))
+    }
+
+    // MARK: - Year Calendar View
+
+    private var yearCalendarView: some View {
+        VStack(spacing: 10) {
+            // Year nav header
+            HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        calendarAnchor = cal.date(byAdding: .year, value: -1, to: calendarAnchor)!
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.textSecondary)
+                        .frame(width: 28, height: 28)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(Circle())
+                }
+                Spacer()
+                Text(yearLabel)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                Spacer()
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        calendarAnchor = cal.date(byAdding: .year, value: 1, to: calendarAnchor)!
+                    }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.textSecondary)
+                        .frame(width: 28, height: 28)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(Circle())
+                }
+            }
+
+            // Contribution graph
+            let cols = yearColumns
+            let monthLabels = yearMonthLabels
+            let cellSize: CGFloat = 11
+            let cellSpacing: CGFloat = 3
+            let rowLabels = ["M","","W","","F","","S"]
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 4) {
+                    // Month label row
+                    HStack(alignment: .top, spacing: cellSpacing) {
+                        // offset for row-label column
+                        Text("").frame(width: 14)
+                        ZStack(alignment: .topLeading) {
+                            HStack(spacing: cellSpacing) {
+                                ForEach(0..<cols.count, id: \.self) { _ in
+                                    Color.clear.frame(width: cellSize)
+                                }
+                            }
+                            ForEach(monthLabels, id: \.col) { item in
+                                Text(item.label)
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(Color.textTertiary)
+                                    .offset(x: CGFloat(item.col) * (cellSize + cellSpacing))
+                            }
+                        }
+                    }
+                    .frame(height: 14)
+
+                    // Grid rows
+                    HStack(alignment: .top, spacing: cellSpacing) {
+                        // Day-of-week labels (Mon, Wed, Fri, Sun)
+                        VStack(spacing: cellSpacing) {
+                            ForEach(0..<7, id: \.self) { row in
+                                Text(rowLabels[row])
+                                    .font(.system(size: 8, weight: .medium))
+                                    .foregroundColor(Color.textTertiary)
+                                    .frame(width: 14, height: cellSize)
+                            }
+                        }
+
+                        // Cell columns
+                        HStack(alignment: .top, spacing: cellSpacing) {
+                            ForEach(0..<cols.count, id: \.self) { col in
+                                VStack(spacing: cellSpacing) {
+                                    ForEach(0..<7, id: \.self) { row in
+                                        if let date = cols[col][row] {
+                                            let isFuture = date > todayStart
+                                            let isSelected = cal.startOfDay(for: date) == selectedDate
+                                            Button {
+                                                withAnimation(.easeInOut(duration: 0.15)) {
+                                                    selectedDate = cal.startOfDay(for: date)
+                                                    calendarAnchor = date
+                                                }
+                                            } label: {
+                                                RoundedRectangle(cornerRadius: 2)
+                                                    .fill(isSelected ? Color.white : (isFuture ? Color.white.opacity(0.04) : yearTaskCellColor(for: date)))
+                                                    .frame(width: cellSize, height: cellSize)
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 2)
+                                                            .stroke(cal.isDateInToday(date) ? Color.kaizenTeal : Color.clear, lineWidth: 1)
+                                                    )
+                                            }
+                                            .buttonStyle(.plain)
+                                        } else {
+                                            Color.clear.frame(width: cellSize, height: cellSize)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+
+            // Legend
+            HStack(spacing: 12) {
+                Spacer()
+                HStack(spacing: 4) {
+                    ForEach([Color.white.opacity(0.04), Color.kaizenOrange.opacity(0.3), Color.kaizenTeal.opacity(0.45), Color.kaizenTeal], id: \.self) { c in
+                        RoundedRectangle(cornerRadius: 2).fill(c).frame(width: 11, height: 11)
+                    }
+                    Text("Less → More done")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color.textTertiary)
                 }
             }
         }
