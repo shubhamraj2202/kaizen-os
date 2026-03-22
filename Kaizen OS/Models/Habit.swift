@@ -18,6 +18,7 @@ final class Habit {
     var reminderTime: Date?
     var reminderDays: [Int]
     var reminderLeadMinutesList: [Int]  // each value = one notification offset (e.g. [0, 10])
+    var scheduledWeekdays: [Int]    // empty = every day; non-empty = only on those days (0=Sun…6=Sat)
     var endDate: Date?              // nil = unlimited
 
     @Relationship(deleteRule: .cascade)
@@ -34,6 +35,7 @@ final class Habit {
         self.reminderTime = nil
         self.reminderDays = []
         self.reminderLeadMinutesList = []
+        self.scheduledWeekdays = []
         self.endDate = nil
     }
 

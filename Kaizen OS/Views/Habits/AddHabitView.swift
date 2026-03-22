@@ -53,6 +53,10 @@ struct AddHabitView: View {
     @State private var reminderDays: Set<Int> = []
     @State private var reminderLeadMinutes: Set<Int> = [0]  // multi-select, default = at time
 
+    // Schedule
+    @State private var scheduleAllDays = true
+    @State private var habitScheduledDays: Set<Int> = []
+
     // Duration
     @State private var durationOption: DurationOption = .forever
     @State private var customEndDate: Date = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
@@ -86,6 +90,8 @@ struct AddHabitView: View {
         _reminderTime = State(initialValue: habit.reminderTime ?? (Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()))
         _reminderDays = State(initialValue: Set(habit.reminderDays))
         _reminderLeadMinutes = State(initialValue: habit.reminderLeadMinutesList.isEmpty ? [0] : Set(habit.reminderLeadMinutesList))
+        _scheduleAllDays = State(initialValue: habit.scheduledWeekdays.isEmpty)
+        _habitScheduledDays = State(initialValue: Set(habit.scheduledWeekdays))
         if let end = habit.endDate {
             _durationOption = State(initialValue: .custom)
             _customEndDate = State(initialValue: end)
@@ -122,6 +128,7 @@ struct AddHabitView: View {
                         }
 
                         durationSection
+                        scheduleSection
                         reminderSection
 
                         // Save button
@@ -134,7 +141,7 @@ struct AddHabitView: View {
                                 .background(name.isEmpty ? Color.kaizenTeal.opacity(0.3) : Color.kaizenTeal)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .disabled(name.isEmpty)
+                        .disabled(name.isEmpty || (!scheduleAllDays && habitScheduledDays.isEmpty))
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
@@ -270,6 +277,66 @@ struct AddHabitView: View {
         .animation(.easeInOut(duration: 0.2), value: durationOption)
     }
 
+    // MARK: - Schedule Section
+
+    private var scheduleSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Schedule")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color.textSecondary)
+
+            HStack(spacing: 8) {
+                ForEach([(true, "Every day"), (false, "Specific days")], id: \.0) { allDays, label in
+                    Button { scheduleAllDays = allDays } label: {
+                        Text(label)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(scheduleAllDays == allDays ? .white : Color.textSecondary)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(scheduleAllDays == allDays ? Color.kaizenTeal.opacity(0.2) : Color.white.opacity(0.06))
+                            .clipShape(Capsule())
+                            .overlay(Capsule().stroke(scheduleAllDays == allDays ? Color.kaizenTeal : .clear, lineWidth: 1))
+                    }
+                }
+                Spacer()
+            }
+
+            if !scheduleAllDays {
+                HStack(spacing: 8) {
+                    ForEach(0..<7, id: \.self) { day in
+                        let isSelected = habitScheduledDays.contains(day)
+                        Button {
+                            if isSelected { habitScheduledDays.remove(day) } else { habitScheduledDays.insert(day) }
+                        } label: {
+                            Text(weekdayLabels[day])
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(isSelected ? .black : Color.textSecondary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 34)
+                                .background(isSelected ? Color.kaizenTeal : Color.white.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+
+                if habitScheduledDays.isEmpty {
+                    Text("Select at least one day")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.kaizenOrange.opacity(0.8))
+                } else {
+                    Text("\(habitScheduledDays.count) day\(habitScheduledDays.count == 1 ? "" : "s") per week")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.textTertiary)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.borderDefault, lineWidth: 1))
+        .animation(.easeInOut(duration: 0.2), value: scheduleAllDays)
+    }
+
     // MARK: - Reminder Section
 
     private var reminderSection: some View {
@@ -394,6 +461,7 @@ struct AddHabitView: View {
             existing.name = name
             existing.emoji = finalEmoji
             applyDuration(to: existing)
+            applySchedule(to: existing)
             applyReminder(to: existing)
             try? modelContext.save()
             dismiss()
@@ -405,11 +473,16 @@ struct AddHabitView: View {
             }
             let habit = Habit(name: name, emoji: finalEmoji, sortOrder: activeHabits.count)
             applyDuration(to: habit)
+            applySchedule(to: habit)
             applyReminder(to: habit)
             modelContext.insert(habit)
             try? modelContext.save()
             dismiss()
         }
+    }
+
+    private func applySchedule(to habit: Habit) {
+        habit.scheduledWeekdays = scheduleAllDays ? [] : Array(habitScheduledDays).sorted()
     }
 
     private func applyDuration(to habit: Habit) {

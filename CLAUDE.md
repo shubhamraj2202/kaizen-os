@@ -390,6 +390,20 @@ KaizenOS/
 - Per-habit reminders: set in `AddHabitView`, stored on `Habit.reminderTime` + `Habit.reminderDays`, scheduled via `NotificationManager.scheduleHabitReminder`
 - Daily reminder: set in `NotificationSettingsView`, stored on `UserProfile`, scheduled via `NotificationManager.scheduleDailyReminder`
 
+### Session (2026-03-22) — Habit Scheduling + Week/Month Task Calendar [DONE]
+
+**What was built:**
+
+- **Habit.swift** — Added `scheduledWeekdays: [Int]` field (empty = every day; non-empty = only those weekdays, 0=Sun…6=Sat); initialised to `[]` in `init`
+- **HabitTrackerView.swift** — Added `habitsForDate` computed property that filters active habits by `scheduledWeekdays` for the current `viewingDate`; replaced direct `habits.filter(\.isActive)` usage with `habitsForDate`; empty state now distinguishes "no habits at all" (🌱 No habits yet) vs "rest day" (😌 Rest day — No habits scheduled for this day)
+- **AddHabitView.swift** — Added Schedule section UI between Duration and Reminder: "Every day" / "Specific days" toggle; weekday selector grid (S M T W T F S) shown when "Specific days" selected; warning shown when no days selected; save button disabled when specific-days mode has zero days selected; `applySchedule(to:)` helper persists choice to `habit.scheduledWeekdays`; edit mode pre-populates schedule state from existing habit
+- **TaskListView.swift** — Full rewrite replacing the horizontal date strip with a Week/Month calendar switcher; Week view: Mon-anchored 7-day row with ◀ ▶ week navigation, task-dot indicator, today highlight; Month view: full month grid with Mon-anchored weekday headers, ◀ ▶ month navigation, task-dot indicators; `calendarAnchor` state drives both views independently; `datesWithTasks` computed set powers the dot indicators; `WeekDayCell` and `MonthDayCell` private structs added; all existing TaskRow/OtherTaskRow logic preserved unchanged
+
+**Architecture notes:**
+- `scheduledWeekdays` uses 0=Sun…6=Sat convention (matching `Calendar.component(.weekday) - 1`)
+- Empty `scheduledWeekdays` means "show every day" — backwards compatible with all existing habits
+- `calendarAnchor` and `selectedDate` are separate states: anchor drives which week/month is visible, selectedDate drives which day's tasks are shown
+
 ### Session (2026-03-15) — Naming Decision [DONE]
 
 **Decision:** Keep "Kaizen OS" branding throughout the app (in-app text, onboarding, paywall, bundle IDs).

@@ -21,6 +21,14 @@ struct HabitTrackerView: View {
     @State private var prefillEmoji = "✅"
     @State private var pendingTemplate = false
 
+    private var habitsForDate: [Habit] {
+        let weekday = Calendar.current.component(.weekday, from: viewingDate) - 1  // 0=Sun…6=Sat
+        return habits.filter { habit in
+            guard habit.isActive else { return false }
+            return habit.scheduledWeekdays.isEmpty || habit.scheduledWeekdays.contains(weekday)
+        }
+    }
+
     private var isViewingToday: Bool {
         Calendar.current.isDateInToday(viewingDate)
     }
@@ -99,21 +107,26 @@ struct HabitTrackerView: View {
                     .padding(.horizontal, 4)
 
                     // Habit rows or empty state
-                    if habits.filter(\.isActive).isEmpty {
+                    if habitsForDate.isEmpty {
                         VStack(spacing: 12) {
-                            Text("🌱")
-                                .font(.system(size: 48))
-                            Text("No habits yet")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(.white)
-                            Text("Tap + to add your first habit")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color.textTertiary)
+                            if habits.filter(\.isActive).isEmpty {
+                                Text("🌱").font(.system(size: 48))
+                                Text("No habits yet")
+                                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                                Text("Tap + to add your first habit")
+                                    .font(.system(size: 14)).foregroundColor(Color.textTertiary)
+                            } else {
+                                Text("😌").font(.system(size: 48))
+                                Text("Rest day")
+                                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                                Text("No habits scheduled for this day")
+                                    .font(.system(size: 14)).foregroundColor(Color.textTertiary)
+                            }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 40)
                     } else {
-                        ForEach(habits.filter(\.isActive)) { habit in
+                        ForEach(habitsForDate) { habit in
                             HabitRowView(habit: habit, date: viewingDate) {
                                 toggleHabit(habit)
                             }
