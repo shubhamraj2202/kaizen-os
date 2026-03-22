@@ -50,18 +50,35 @@ final class Habit {
         return "\(diff)d left"
     }
 
+    // Returns true if this habit is scheduled on the given calendar weekday (0=Sun…6=Sat)
+    private func isScheduled(on date: Date) -> Bool {
+        guard !scheduledWeekdays.isEmpty else { return true }  // empty = every day
+        let weekday = Calendar.current.component(.weekday, from: date) - 1  // 1-based → 0-based
+        return scheduledWeekdays.contains(weekday)
+    }
+
     var currentStreak: Int {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        var streak = 0
-        var checkDate = today
         let completedDates = Set(
             entries
                 .filter { $0.isCompleted }
                 .map { calendar.startOfDay(for: $0.date) }
         )
-        while completedDates.contains(checkDate) {
-            streak += 1
+        var streak = 0
+        var checkDate = today
+        // Walk backwards, skipping rest days, breaking only on a missed scheduled day
+        for _ in 0..<365 {
+            if isScheduled(on: checkDate) {
+                if completedDates.contains(checkDate) {
+                    streak += 1
+                } else {
+                    // Missed a scheduled day — streak ends
+                    // Exception: if checkDate is today and habit not done yet, don't penalise
+                    if checkDate != today { break }
+                }
+            }
+            // Move to previous day
             guard let prev = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
             checkDate = prev
         }
@@ -70,21 +87,29 @@ final class Habit {
 
     var longestStreak: Int {
         let calendar = Calendar.current
-        let sorted = entries
-            .filter { $0.isCompleted }
-            .map { calendar.startOfDay(for: $0.date) }
-            .sorted()
-        guard !sorted.isEmpty else { return 0 }
-        var longest = 1
-        var current = 1
-        for i in 1..<sorted.count {
-            let diff = calendar.dateComponents([.day], from: sorted[i - 1], to: sorted[i]).day ?? 0
-            if diff == 1 {
-                current += 1
-                longest = max(longest, current)
-            } else if diff > 1 {
-                current = 1
+        // Get all scheduled days from habit creation to today, walk forward
+        let today = calendar.startOfDay(for: Date())
+        let start = calendar.startOfDay(for: createdAt)
+        let completedDates = Set(
+            entries
+                .filter { $0.isCompleted }
+                .map { calendar.startOfDay(for: $0.date) }
+        )
+        var longest = 0
+        var current = 0
+        var checkDate = start
+        while checkDate <= today {
+            if isScheduled(on: checkDate) {
+                if completedDates.contains(checkDate) {
+                    current += 1
+                    longest = max(longest, current)
+                } else {
+                    current = 0  // missed a scheduled day
+                }
             }
+            // Skip to next day
+            guard let next = calendar.date(byAdding: .day, value: 1, to: checkDate) else { break }
+            checkDate = next
         }
         return longest
     }
@@ -100,10 +125,19 @@ final class Habit {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         guard let start = calendar.date(byAdding: .day, value: -29, to: today) else { return 0 }
-        let recent = entries.filter {
-            let d = calendar.startOfDay(for: $0.date)
-            return d >= start && d <= today
+        // Count only days the habit was actually scheduled in the window
+        var scheduledCount = 0
+        var checkDate = start
+        while checkDate <= today {
+            if isScheduled(on: checkDate) { scheduledCount += 1 }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: checkDate) else { break }
+            checkDate = next
         }
-        return Double(recent.filter { $0.isCompleted }.count) / 30.0
+        guard scheduledCount > 0 else { return 0 }
+        let completed = entries.filter {
+            let d = calendar.startOfDay(for: $0.date)
+            return d >= start && d <= today && $0.isCompleted
+        }.count
+        return Double(completed) / Double(scheduledCount)
     }
 }
