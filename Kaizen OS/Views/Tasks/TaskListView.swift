@@ -494,11 +494,19 @@ private struct TaskRow: View {
                         }
                     }
 
-                    Text(task.title)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(task.isCompleted ? .white.opacity(0.35) : .white)
-                        .strikethrough(task.isCompleted)
-                        .animation(.easeInOut(duration: 0.2), value: task.isCompleted)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(task.title)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(task.isCompleted ? .white.opacity(0.35) : .white)
+                            .strikethrough(task.isCompleted)
+                            .animation(.easeInOut(duration: 0.2), value: task.isCompleted)
+                        if !task.notes.isEmpty {
+                            Text(task.notes)
+                                .font(.system(size: 12))
+                                .foregroundColor(Color.textTertiary)
+                                .lineLimit(2)
+                        }
+                    }
                     Spacer()
                 }
                 .padding(.vertical, 10)
@@ -537,11 +545,19 @@ private struct OtherTaskRow: View {
                     }
                 }
 
-                Text(task.title)
-                    .font(.system(size: 14))
-                    .foregroundStyle(task.isCompleted ? .white.opacity(0.3) : .white)
-                    .strikethrough(task.isCompleted)
-                    .animation(.easeInOut(duration: 0.2), value: task.isCompleted)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(task.title)
+                        .font(.system(size: 14))
+                        .foregroundStyle(task.isCompleted ? .white.opacity(0.3) : .white)
+                        .strikethrough(task.isCompleted)
+                        .animation(.easeInOut(duration: 0.2), value: task.isCompleted)
+                    if !task.notes.isEmpty {
+                        Text(task.notes)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.textTertiary)
+                            .lineLimit(2)
+                    }
+                }
                 Spacer()
 
                 Text(task.category.rawValue)

@@ -35,6 +35,7 @@ enum TaskCategory: String, Codable, CaseIterable {
 final class DailyTask {
     var id: UUID
     var title: String
+    var notes: String       // optional description / checklist text
     var date: Date
     var isCompleted: Bool
     var completedAt: Date?
@@ -43,9 +44,10 @@ final class DailyTask {
     var sortOrder: Int
     var createdAt: Date
 
-    init(title: String, date: Date = Date(), priority: TaskPriority = .normal, category: TaskCategory = .other) {
+    init(title: String, notes: String = "", date: Date = Date(), priority: TaskPriority = .normal, category: TaskCategory = .other) {
         self.id = UUID()
         self.title = title
+        self.notes = notes
         self.date = Calendar.current.startOfDay(for: date)
         self.isCompleted = false
         self.priority = priority

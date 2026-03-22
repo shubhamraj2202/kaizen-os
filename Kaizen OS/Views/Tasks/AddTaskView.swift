@@ -11,6 +11,7 @@ struct AddTaskView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var title = ""
+    @State private var notes = ""
     @State private var priority: TaskPriority = .normal
     @State private var category: TaskCategory = .other
     @State private var taskDate: Date
@@ -41,6 +42,24 @@ struct AddTaskView: View {
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(Color.borderDefault, lineWidth: 1)
+                            )
+                    }
+
+                    // Notes field
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Notes")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color.textSecondary)
+                        TextField("Add details, checklist, or any notes…", text: $notes, axis: .vertical)
+                            .font(.system(size: 15))
+                            .foregroundStyle(.white)
+                            .lineLimit(3...8)
+                            .padding(16)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(notes.isEmpty ? Color.borderDefault : Color.kaizenTeal.opacity(0.4), lineWidth: 1)
                             )
                     }
 
@@ -148,7 +167,7 @@ struct AddTaskView: View {
     }
 
     private func saveTask() {
-        let task = DailyTask(title: title, date: taskDate, priority: priority, category: category)
+        let task = DailyTask(title: title, notes: notes, date: taskDate, priority: priority, category: category)
         modelContext.insert(task)
         try? modelContext.save()
         dismiss()
