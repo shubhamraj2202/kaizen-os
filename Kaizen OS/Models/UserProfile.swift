@@ -17,6 +17,7 @@ final class UserProfile {
     var weekStartsOnMonday: Bool
     var dailyReminderEnabled: Bool
     var dailyReminderTime: Date?
+    var avatarEmoji: String   // "" = use name initial
 
     init(name: String = "") {
         self.id = UUID()
@@ -26,6 +27,7 @@ final class UserProfile {
         self.createdAt = Date()
         self.weekStartsOnMonday = true
         self.dailyReminderEnabled = false
+        self.avatarEmoji = ""
     }
 
     static let freeHabitLimit = 5

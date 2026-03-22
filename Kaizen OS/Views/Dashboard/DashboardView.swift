@@ -15,14 +15,45 @@ struct DashboardView: View {
     private var habits: [Habit]
 
     @Query private var mindsetLogs: [MindsetLog]
+    @Query private var profiles: [UserProfile]
 
     @State private var hapticTrigger = 0
+    @State private var showAvatarPicker = false
+
+    private var profile: UserProfile? { profiles.first }
 
     private var todayNote: String? {
         let today = Calendar.current.startOfDay(for: Date())
         return mindsetLogs.first {
             Calendar.current.startOfDay(for: $0.date) == today
         }?.note
+    }
+
+    // MARK: - Greeting helpers
+
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        case 17..<22: return "Good evening"
+        default:     return "Hey"
+        }
+    }
+
+    private var displayName: String {
+        let name = profile?.name.trimmingCharacters(in: .whitespaces) ?? ""
+        return name.isEmpty ? "there" : name
+    }
+
+    private var avatarDisplay: String {
+        if let emoji = profile?.avatarEmoji, !emoji.isEmpty { return emoji }
+        let name = profile?.name.trimmingCharacters(in: .whitespaces) ?? ""
+        return name.isEmpty ? "✦" : String(name.prefix(1)).uppercased()
+    }
+
+    private var avatarIsEmoji: Bool {
+        !(profile?.avatarEmoji ?? "").isEmpty
     }
 
     // MARK: - Note save
@@ -44,32 +75,53 @@ struct DashboardView: View {
         ScrollView {
             VStack(spacing: 16) {
                 // Header
-                HStack {
+                HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(Date().displayDate)
                             .font(.system(size: 13))
                             .foregroundColor(Color.textSecondary)
-                        Text("改善 Kaizen OS")
-                            .font(.system(size: 26, weight: .heavy))
-                            .foregroundStyle(.white)
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text("\(greeting),")
+                                .font(.system(size: 22, weight: .regular))
+                                .foregroundStyle(.white.opacity(0.7))
+                            Text(displayName)
+                                .font(.system(size: 22, weight: .heavy))
+                                .foregroundStyle(.white)
+                        }
                     }
                     Spacer()
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(
-                            LinearGradient(
-                                colors: [.kaizenTeal, .kaizenPurple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 42, height: 42)
-                        .overlay(
-                            Text("K")
-                                .font(.system(size: 16, weight: .heavy))
-                                .foregroundStyle(.black)
-                        )
+                    // Avatar button
+                    Button {
+                        showAvatarPicker = true
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.kaizenTeal, .kaizenPurple],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 46, height: 46)
+                            if avatarIsEmoji {
+                                Text(avatarDisplay)
+                                    .font(.system(size: 24))
+                            } else {
+                                Text(avatarDisplay)
+                                    .font(.system(size: 18, weight: .heavy))
+                                    .foregroundStyle(.black)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.top, 8)
+                .sheet(isPresented: $showAvatarPicker) {
+                    AvatarPickerSheet(profile: profile)
+                        .presentationDetents([.medium])
+                        .presentationDragIndicator(.visible)
+                }
 
                 // Day Score
                 DayScoreCard(habits: habits)
@@ -451,6 +503,100 @@ private struct MindsetCTABanner: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(Color.kaizenPurple.opacity(0.2), lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Avatar Picker Sheet
+
+private struct AvatarPickerSheet: View {
+    let profile: UserProfile?
+    @Environment(\.dismiss) private var dismiss
+
+    private let avatars: [[String]] = [
+        ["😊", "😎", "🤓", "🧑‍💻", "🦸", "🧙"],
+        ["🐺", "🦊", "🦁", "🐯", "🐻", "🐼"],
+        ["🚀", "⚡", "🔥", "🌊", "🌙", "⭐"],
+    ]
+
+    var body: some View {
+        VStack(spacing: 24) {
+            // Handle + title
+            VStack(spacing: 4) {
+                Text("Choose Avatar")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(.white)
+                Text("Tap any avatar to use it")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color.textSecondary)
+            }
+            .padding(.top, 8)
+
+            // Current avatar preview
+            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        LinearGradient(
+                            colors: [.kaizenTeal, .kaizenPurple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 64, height: 64)
+                let current = profile?.avatarEmoji ?? ""
+                if current.isEmpty {
+                    let name = profile?.name.trimmingCharacters(in: .whitespaces) ?? ""
+                    Text(name.isEmpty ? "✦" : String(name.prefix(1)).uppercased())
+                        .font(.system(size: 28, weight: .heavy))
+                        .foregroundStyle(.black)
+                } else {
+                    Text(current)
+                        .font(.system(size: 34))
+                }
+            }
+
+            // Emoji grid
+            VStack(spacing: 12) {
+                ForEach(avatars, id: \.self) { row in
+                    HStack(spacing: 12) {
+                        ForEach(row, id: \.self) { emoji in
+                            let isSelected = profile?.avatarEmoji == emoji
+                            Button {
+                                profile?.avatarEmoji = emoji
+                                dismiss()
+                            } label: {
+                                Text(emoji)
+                                    .font(.system(size: 30))
+                                    .frame(width: 52, height: 52)
+                                    .background(isSelected ? Color.kaizenTeal.opacity(0.2) : Color.white.opacity(0.05))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(isSelected ? Color.kaizenTeal : Color.clear, lineWidth: 2)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+
+            // Use initials option
+            Button {
+                profile?.avatarEmoji = ""
+                dismiss()
+            } label: {
+                Text("Use my initials instead")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Color.textSecondary)
+                    .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .background(Color.bgPrimary)
+        .colorScheme(.dark)
     }
 }
 
