@@ -314,15 +314,18 @@ KaizenOS/
 - 7-day ring row + weekly trend chart
 
 #### Dashboard
+- Personalised greeting: time-based ("Good morning/afternoon/evening, [Name]!") from UserProfile.name
+- Avatar button (top right): shows chosen emoji or user's first initial; tap → emoji picker sheet (18 options)
 - Day score ring (% of today's habits done)
 - Stats row: best streak, this week %, total wins
+- Today's Note card: inline editable — tap to expand TextField, Done saves; Dashboard-only (removed from Mindset tab)
 - Today's habits preview (tap to toggle from Dashboard)
-- Today's Note card: shows today's note, tap to edit inline, navigates to Mindset
+- Mindset CTA banner → navigates to Mindset tab
 
 #### Daily Note / Scratchpad
 - One freeform note per day, stored on MindsetLog.note
-- Visible on Dashboard as TodayNoteCard (orange accent)
-- Also editable in Mindset tab
+- Inline editable on Dashboard — no separate screen needed
+- Creates a stub MindsetLog (50/50/50) if no check-in exists yet so note is never lost
 
 #### Infrastructure
 - Notifications: per-habit reminders + daily check-in reminder
