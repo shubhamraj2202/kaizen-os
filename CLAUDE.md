@@ -276,21 +276,59 @@ KaizenOS/
 - **SwiftUI:** https://developer.apple.com/documentation/swiftui
 - **StoreKit 2:** https://developer.apple.com/documentation/storekit
 
-## Current State (as of 2026-03-16)
+## Current State (as of 2026-03-22)
 
 ### What's fully built & working
+
+#### Core App
 - All 5 tabs: Dashboard, Habits, Tasks, Mindset, Settings
 - SwiftData models: Habit, HabitEntry, DailyTask, MindsetLog, UserProfile
-- Habit tracker with heatmap (calendar month, date numbers, past-date editing)
-- Habit templates (20 templates, 5 categories) + per-habit analysis bar chart
-- Task list with date strip (±7 days), future/past task scheduling
-- Mindset tracker with health card (sleep, wake time, steps)
+
+#### Habits
+- Habit tracker with heatmap (Week / Month / Year views, date numbers, past-date editing)
+- Habit templates (20 templates, 5 categories)
+- Per-habit analysis bar chart (30-day completion rate, color-coded teal/orange/coral)
+- Custom emoji picker (grid + free-type from keyboard)
+- Duration / challenge mode (Forever / 21d / 90d / 1yr / Custom end date)
+- Schedule: Every day or specific weekdays (M T W T F S S)
+- Reminders: per-habit, time + multi-select lead time (At time / 5 / 10 / 15 / 30 min before)
+- Reminder fires only on scheduled days (no alerts on rest days)
+- Habit lifecycle: Skip Today, Pause (with resume date + auto-resume), Retire, Delete, Restore
+- Edit existing habit: long-press context menu or swipe left
+- Schedule-aware streaks: rest days never break streak; only missed scheduled days reset it
+- Completion rate uses scheduled days as denominator (Mon–Fri habit can hit 100%)
+- Auto-retire habits past their end date on app open
+
+#### Tasks
+- Task list with Week / Month / Year calendar (tappable cells, dot indicators)
+- Future + past task scheduling (any date)
+- Task notes/description field (shown inline below title)
+- Top 3 priority system + category tags
+- Progress bar for selected day
+- Year view: GitHub-style contribution graph (teal=all done, partial, pending, empty)
+
+#### Mindset
+- Energy / Focus / Mood sliders (0–100) with animated custom bars
+- Health card: sleep hours, wake time, steps (manual entry)
+- HealthKit sync (premium): auto-fills sleep, steps, wake time from Apple Health
+- 7-day ring row + weekly trend chart
+
+#### Dashboard
+- Day score ring (% of today's habits done)
+- Stats row: best streak, this week %, total wins
+- Today's habits preview (tap to toggle from Dashboard)
+- Today's Note card: shows today's note, tap to edit inline, navigates to Mindset
+
+#### Daily Note / Scratchpad
+- One freeform note per day, stored on MindsetLog.note
+- Visible on Dashboard as TodayNoteCard (orange accent)
+- Also editable in Mindset tab
+
+#### Infrastructure
 - Notifications: per-habit reminders + daily check-in reminder
-- HealthKit (premium): sleep, steps, wake time auto-import
 - StoreKit 2 paywall ($4.99, product ID: `com.shubh.kaizenos.premium`)
 - WidgetKit: small + medium widget (day score ring + streak)
-- SF Symbols tab bar (fixed from broken custom PNG icons)
-- `.gitignore` in place — `xcuserstate` no longer tracked
+- FEATURES.md: user-facing feature documentation
 
 ### Pending manual Xcode steps
 - App Groups (`group.com.shubh.kaizenos`) — add to both main target + widget extension via Signing & Capabilities (needed for widget live data)
@@ -302,10 +340,53 @@ KaizenOS/
 - Last rejection fixed: ITMS-90683 `NSHealthUpdateUsageDescription` missing (commit `091f913`)
 - Build 7 resubmitted — awaiting result
 
-### Next priorities
-1. App Groups finalisation (widget live data)
-2. Onboarding polish
-3. App Store screenshots
+### Next priorities (approved, pending implementation)
+1. **Keyboard dismiss bug** — note TextField traps keyboard, tabs disappear; fix with @FocusState + Done toolbar button + .scrollDismissesKeyboard
+2. **Move Today's Note to Dashboard only** — remove from MindsetView, make inline-editable on Dashboard card
+3. **Enhanced Mindset** — dynamic rotating questions based on mood/energy/focus scores + ◀ ▶ past-day editing
+4. **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month
+5. **Task history & summary** — completed tasks grouped by week, category breakdown, overall stats
+6. **Fix Tasks tab month display** — investigate and fix UI glitch in month calendar
+7. App Groups finalisation (widget live data)
+8. Onboarding flow
+9. App Store screenshots
+
+---
+
+## Future Roadmap (Long-Term, Needs Design Approval Before Build)
+
+### AI Assistant — "Kaizen Bot"
+A conversational AI assistant embedded in the Dashboard. Powered by **Gemini AI** (free tier for users, optional API key for premium).
+
+**What it knows:**
+- Full habit history: which days completed, streaks, patterns, best/worst days
+- Task history: what was done, categories, completion rates by week
+- Mindset logs: energy/focus/mood trends, daily notes, sleep + steps
+- User's own writing (daily notes act as a journal the AI can reference)
+
+**What users can ask:**
+- *"How consistent have I been with gym this month?"*
+- *"What day of the week am I most productive?"*
+- *"When did I have my best mindset score?"*
+- *"What habits did I do on the day I felt most energized?"*
+- *"Give me a weekly summary"*
+
+**Technical approach:**
+- `GeminiManager.swift` — `@Observable` helper, sends structured context payload to Gemini API
+- Context payload: last 30 days of habits, tasks, mindset as JSON summary (not raw data — pre-summarised to stay within token limits)
+- Premium feature: free users get 5 queries/day; premium = unlimited
+- No data ever leaves device without explicit user action (user initiates the query)
+- All AI responses are read-only suggestions — the AI never mutates app data
+
+**New model needed:**
+- `AIConversation.swift` — stores conversation history per session (date, messages array)
+
+**UI:**
+- Dashboard: floating "Ask Kaizen" button (bottom left, purple, brain icon)
+- Opens a chat sheet: scrollable message history + input bar
+- AI responses include quick-tap follow-ups ("Tell me more", "Show chart")
+
+**Design approval required before building.** Do not implement until user reviews wireframes.
 
 ---
 
@@ -403,6 +484,31 @@ KaizenOS/
 - `scheduledWeekdays` uses 0=Sun…6=Sat convention (matching `Calendar.component(.weekday) - 1`)
 - Empty `scheduledWeekdays` means "show every day" — backwards compatible with all existing habits
 - `calendarAnchor` and `selectedDate` are separate states: anchor drives which week/month is visible, selectedDate drives which day's tasks are shown
+
+### Session (2026-03-22) — Habit Lifecycle: Skip / Pause / Retire / Delete / Restore [DONE]
+
+**What was built:**
+
+- **HabitEntry.swift** — Added `isSkipped: Bool` field (default false). Added `skip()` method. `complete()` now clears `isSkipped`. Skipped entries are transparent — they don't count toward streak and don't break it.
+- **Habit.swift** — Added `pausedUntil: Date?` + `isPaused: Bool` computed. Made `isScheduled(on:)` internal. Updated `currentStreak`, `longestStreak`, `completionRate30Days` to skip over `isSkipped` entries rather than treating them as missed days.
+- **HabitRowView.swift** — Shows paused state (purple pause icon + "Paused until [date]"), skipped state (orange forward icon + "Skipped today"), or normal state. Paused rows disable tap-to-toggle.
+- **HabitTrackerView.swift** — Full context menu: Edit, Skip Today/Undo Skip, Pause/Resume Now, Retire, Delete with confirmation alert. `PauseHabitSheet` (graphical calendar date picker, purple). Retired habits section (collapsible "RETIRED (N)" with Restore + Delete). `autoManageHabits()` auto-retires past endDate AND auto-resumes past pausedUntil on appear.
+
+**Principles encoded:**
+- Rest days (unscheduled) never break streak
+- Skipped days (intentional) never break streak
+- Only missed scheduled days reset streak
+- Delete = permanent (cascade). Retire = reversible (isActive toggle).
+
+### Session (2026-03-22) — Reminder UX + Schedule-Aware Streaks + Daily Note [DONE]
+
+**What was built:**
+
+- **AddHabitView.swift** — Renamed "Daily Reminder" → "Reminder". Removed the duplicate "Repeat" weekday picker from reminder section. Reminders now auto-follow the habit schedule (no separate day configuration). Shows a read-only "Repeats: Every day / N days per week" summary.
+- **Habit.swift** — `currentStreak` and `longestStreak` rewritten to skip non-scheduled (rest) days when walking backwards/forwards. `completionRate30Days` denominator changed from hardcoded 30 to count of scheduled non-skipped days in window.
+- **MindsetView.swift** — Added "TODAY'S NOTE" scratchpad textarea (orange accent, multiline). Loads/saves via `MindsetLog.note`. Border glows orange when text present.
+- **DashboardView.swift** — Added `TodayNoteCard` between stats and habits. Shows note preview (3 lines) or "Tap to add a note…" prompt. Tapping navigates to Mindset tab. Queries `MindsetLog` for today.
+- **FEATURES.md** (new) — User-facing feature documentation covering all features and the streak principle.
 
 ### Session (2026-03-15) — Naming Decision [DONE]
 
