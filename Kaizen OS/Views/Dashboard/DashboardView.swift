@@ -14,7 +14,16 @@ struct DashboardView: View {
            sort: \Habit.sortOrder)
     private var habits: [Habit]
 
+    @Query private var mindsetLogs: [MindsetLog]
+
     @State private var hapticTrigger = 0
+
+    private var todayNote: String? {
+        let today = Calendar.current.startOfDay(for: Date())
+        return mindsetLogs.first {
+            Calendar.current.startOfDay(for: $0.date) == today
+        }?.note
+    }
 
     var body: some View {
         ScrollView {
@@ -55,6 +64,11 @@ struct DashboardView: View {
                     StatCard(icon: "🔥", value: "\(bestStreak)d", label: "Best Streak", color: .kaizenOrange)
                     StatCard(icon: "📊", value: "\(weekPercent)%", label: "This Week", color: .kaizenTeal)
                     StatCard(icon: "⚡", value: "\(totalWins)", label: "Total Wins", color: .kaizenPurple)
+                }
+
+                // Today's Note card
+                TodayNoteCard(note: todayNote) {
+                    selectedTab = 3
                 }
 
                 // Today's Habits preview
@@ -294,6 +308,54 @@ private struct TagPill: View {
             .padding(.vertical, 3)
             .background(bgColor)
             .clipShape(Capsule())
+    }
+}
+
+// MARK: - Today's Note Card
+
+private struct TodayNoteCard: View {
+    let note: String?
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "note.text")
+                    .font(.system(size: 15))
+                    .foregroundColor(Color.kaizenOrange)
+                    .padding(.top, 1)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("TODAY'S NOTE")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color.kaizenOrange.opacity(0.7))
+                        .tracking(0.6)
+                    if let note, !note.isEmpty {
+                        Text(note)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
+                    } else {
+                        Text("Tap to add a note for today…")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.textTertiary)
+                    }
+                }
+                Spacer()
+                Image(systemName: "pencil")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.textTertiary)
+            }
+            .padding(16)
+            .background(Color.kaizenOrange.opacity(0.07))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.kaizenOrange.opacity(note != nil ? 0.25 : 0.1), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
