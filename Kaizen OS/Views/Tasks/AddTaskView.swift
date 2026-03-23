@@ -15,6 +15,8 @@ struct AddTaskView: View {
     @State private var priority: TaskPriority = .normal
     @State private var category: TaskCategory = .other
     @State private var taskDate: Date
+    @FocusState private var titleFocused: Bool
+    @FocusState private var notesFocused: Bool
 
     // MARK: - Init
 
@@ -43,6 +45,7 @@ struct AddTaskView: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(Color.borderDefault, lineWidth: 1)
                             )
+                            .focused($titleFocused)
                     }
 
                     // Notes field
@@ -61,6 +64,7 @@ struct AddTaskView: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(notes.isEmpty ? Color.borderDefault : Color.kaizenTeal.opacity(0.4), lineWidth: 1)
                             )
+                            .focused($notesFocused)
                     }
 
                     // Date picker
@@ -160,6 +164,15 @@ struct AddTaskView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .foregroundColor(Color.textSecondary)
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        titleFocused = false
+                        notesFocused = false
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color.kaizenTeal)
                 }
             }
             .toolbarColorScheme(.dark, for: .navigationBar)

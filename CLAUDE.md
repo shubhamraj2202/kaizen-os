@@ -350,6 +350,7 @@ Legend: ✅ Done | 🐛 Known bug under feature | 🔲 Pending
 | # | Feature | Status |
 |---|---------|--------|
 | 1 | **Keyboard dismiss bug** — note TextField traps keyboard, tabs disappear | ✅ Done (2026-03-22) |
+| | 🐛 Bug: AddTaskView notes field also traps keyboard — no Done button (found 2026-03-23) → ✅ Fixed (2026-03-23) | |
 | 2 | **Move Today's Note to Dashboard only** — remove from MindsetView, make inline-editable on Dashboard card | ✅ Done (2026-03-22) |
 | 3 | **Enhanced Mindset** — dynamic rotating questions based on mood/energy/focus scores + ◀ ▶ past-day editing | 🔲 |
 | 4 | **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month | 🔲 |
@@ -548,6 +549,20 @@ The bot doesn't just answer factual questions — it responds to how the user *f
 **Architecture notes:**
 - `TodayNoteCard` is self-contained — owns its own `@State text`, `@State isEditing`, `@FocusState focused`; parent only provides `savedNote: String?` and `onSave: (String) -> Void`
 - Note always lives on `MindsetLog.note`; creating a stub log (50/50/50) when note is added without a mindset check-in is intentional — user can update scores later
+
+---
+
+### Session (2026-03-23) — Keyboard Dismiss Bug Fix in AddTaskView [DONE]
+
+**What was built:**
+- **AddTaskView.swift** — Fixed keyboard trap in the Notes field:
+  - Added `@FocusState private var titleFocused: Bool` and `notesFocused: Bool`
+  - Added `.focused($titleFocused)` to title TextField and `.focused($notesFocused)` to notes TextField
+  - Added `ToolbarItemGroup(placement: .keyboard)` with teal "Done" button inside the existing `.toolbar` modifier — clears both focus states on tap
+
+**Architecture notes:**
+- `ToolbarItemGroup(placement: .keyboard)` coexists with the existing `ToolbarItem(placement: .cancellationAction)` in a single `.toolbar` block
+- Both `@FocusState` vars are cleared in the Done handler — covers whichever field is active
 
 ---
 
