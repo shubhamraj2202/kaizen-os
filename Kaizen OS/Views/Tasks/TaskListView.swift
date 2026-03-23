@@ -429,11 +429,13 @@ struct TaskListView: View {
                 }
             }
 
-            // Day grid
+            // Day grid — always fill complete rows to avoid last-row cell stretching
             let totalCells = leadingBlanks + daysInMonth
+            let trailingBlanks = (7 - totalCells % 7) % 7
+            let gridTotal = totalCells + trailingBlanks
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
-                ForEach(0..<totalCells, id: \.self) { index in
-                    if index < leadingBlanks {
+                ForEach(0..<gridTotal, id: \.self) { index in
+                    if index < leadingBlanks || index >= totalCells {
                         Color.clear.frame(height: 36)
                     } else {
                         let day = index - leadingBlanks + 1

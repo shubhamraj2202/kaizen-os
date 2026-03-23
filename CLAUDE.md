@@ -354,7 +354,7 @@ Legend: ✅ Done | 🐛 Known bug under feature | 🔲 Pending
 | 3 | **Enhanced Mindset** — dynamic rotating questions based on mood/energy/focus scores + ◀ ▶ past-day editing | 🔲 |
 | 4 | **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month | 🔲 |
 | 5 | **Task history & summary** — completed tasks grouped by week, category breakdown, overall stats | 🔲 |
-| 6 | **Fix Tasks tab month display** — investigate and fix UI glitch in month calendar | 🔲 |
+| 6 | **Fix Tasks tab month display** — investigate and fix UI glitch in month calendar | ✅ Done (2026-03-23) |
 | 7 | **Personalised Dashboard header** — greeting with user name + avatar emoji picker | ✅ Done (2026-03-22) |
 | 8 | **In-app Kaizen education** — rotating "Today's Insight" card on Dashboard + Help sheet | 🔲 |
 | 9 | App Groups finalisation (widget live data) | 🔲 manual Xcode |
@@ -503,6 +503,18 @@ The bot doesn't just answer factual questions — it responds to how the user *f
 ---
 
 ## Session Status
+
+### Session (2026-03-23) — Fix Tasks tab month calendar display glitch [DONE]
+
+**What was built:**
+
+- **TaskListView.swift** — Fixed UI glitch in month calendar view where the last row of day cells stretched wider than other rows. Root cause: `LazyVGrid` with `.flexible()` columns distributes remaining space evenly across cells in an incomplete last row. Fixed by computing `trailingBlanks = (7 - totalCells % 7) % 7` and extending `gridTotal` to always be a multiple of 7. Trailing blank cells render as `Color.clear` so they are invisible but keep the grid balanced.
+
+**Architecture notes:**
+- No model changes — pure layout fix in the view layer
+- Fix is backward-compatible with all months (when `totalCells % 7 == 0`, `trailingBlanks = 0`)
+
+---
 
 ### Session (2026-03-22) — Personalised Dashboard header + avatar picker [DONE]
 
