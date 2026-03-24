@@ -311,6 +311,8 @@ struct TaskListView: View {
                 } label: {
                     Text(mode.rawValue)
                         .font(.system(size: 12, weight: .semibold))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                         .foregroundColor(calendarMode == mode ? .black : Color.textSecondary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
