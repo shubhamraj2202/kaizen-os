@@ -361,6 +361,7 @@ Legend: ✅ Done | 🐛 Known bug under feature | 🔲 Pending
 | 9 | App Groups finalisation (widget live data) | 🔲 manual Xcode |
 | 10 | Onboarding flow | 🔲 |
 | 11 | App Store screenshots | 🔲 manual |
+| 12 | **Reward system — badges & collections** — earn badges for milestones (streaks, consistency, mindset), shareable achievement cards | 🔲 future |
 
 **How this table works:**
 - Mark ✅ Done + date when a feature ships
@@ -370,6 +371,34 @@ Legend: ✅ Done | 🐛 Known bug under feature | 🔲 Pending
 ---
 
 ## Future Roadmap (Long-Term, Needs Design Approval Before Build)
+
+### Reward System — Badges & Collections
+An achievement system that rewards users for real consistency milestones — like Apple Fitness rings awards but for life habits.
+
+**Badge categories:**
+- **Streak badges** — 7-day, 21-day, 66-day, 100-day streaks on any habit ("Week Warrior", "Habit Formed", "Century Club")
+- **Consistency badges** — 80%+ completion rate for a full month, perfect week
+- **Mindset badges** — 7 consecutive daily check-ins, highest-ever mindset score
+- **Task badges** — complete all Top 3 for 5 days straight, 50 total tasks done
+- **Milestone badges** — first habit created, first week done, 30 days in app
+
+**Shareable achievement cards:**
+- Tapping a badge opens a full-screen card with badge art, title, earned date, and a stat (e.g. "66-day Meditate streak")
+- Share sheet exports as an image (rendered via `ImageRenderer`) — shareable to Instagram Stories, WhatsApp, etc.
+- Dark card, badge glowing in brand colours, "Built with Kaizen OS" watermark
+
+**Technical approach:**
+- `Badge.swift` — enum of all badge types with title, description, SF Symbol / emoji art, unlock condition
+- `BadgeManager.swift` — `@Observable` helper, evaluates unlock conditions against live SwiftData on app open and after habit/task/mindset save; stores earned badges on `UserProfile.earnedBadges: [String]` (badge IDs)
+- No new SwiftData model needed — badge IDs stored as `[String]` on `UserProfile`
+- `BadgesView` — grid of earned (glowing) and locked (dimmed) badges; accessible from Settings or Dashboard
+- `ImageRenderer` for shareable card — renders a `BadgeShareCard` SwiftUI view to UIImage, presents via `ShareLink`
+
+**Premium consideration:** All badges free — sharing is a growth mechanic, not a paywall item.
+
+**Status: PLANNED — needs badge art design + unlock condition review before building.**
+
+---
 
 ### AI Assistant — "Kaizen Bot"
 A conversational AI assistant embedded in the Dashboard. Powered by **Gemini AI** (free tier for users, optional API key for premium).
