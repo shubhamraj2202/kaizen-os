@@ -552,6 +552,15 @@ The bot doesn't just answer factual questions — it responds to how the user *f
 
 ---
 
+### Session (2026-03-25) — Fix Tasks Tab Month Label Glitch [DONE]
+
+**What was built:**
+- **TaskListView.swift** — Fixed "Month" label wrapping to two lines ("Mont\nh") in the Week/Month/Year toggle pill:
+  - Added `.lineLimit(1)` to prevent text wrap
+  - Added `.fixedSize(horizontal: true, vertical: false)` so each label takes its natural width instead of being compressed by the HStack
+
+---
+
 ### Session (2026-03-23) — Keyboard Dismiss Bug Fix in AddTaskView [DONE]
 
 **What was built:**
