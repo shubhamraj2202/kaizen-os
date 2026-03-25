@@ -28,6 +28,9 @@ struct HabitTrackerView: View {
     // Retired section toggle
     @State private var showRetired = false
 
+    // Detail sheet
+    @State private var detailHabit: Habit? = nil
+
     // Pre-fill state for templates → AddHabitView flow
     @State private var prefillName = ""
     @State private var prefillEmoji = "✅"
@@ -154,6 +157,13 @@ struct HabitTrackerView: View {
                                 }
                             }
                             .contextMenu {
+                                // View History
+                                Button { detailHabit = habit } label: {
+                                    Label("View History", systemImage: "chart.bar.fill")
+                                }
+
+                                Divider()
+
                                 // Edit
                                 Button { editingHabit = habit } label: {
                                     Label("Edit Habit", systemImage: "pencil")
@@ -247,6 +257,10 @@ struct HabitTrackerView: View {
             }
             .padding(.trailing, 20)
             .padding(.bottom, 20)
+        }
+        // Detail / history sheet
+        .sheet(item: $detailHabit) { habit in
+            HabitDetailView(habit: habit)
         }
         // Edit sheet
         .sheet(item: $editingHabit) { habit in
