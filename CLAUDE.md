@@ -353,7 +353,7 @@ Legend: ✅ Done | 🐛 Known bug under feature | 🔲 Pending
 | | 🐛 Bug: AddTaskView notes field also traps keyboard — no Done button (found 2026-03-23) → ✅ Fixed (2026-03-23) | |
 | 2 | **Move Today's Note to Dashboard only** — remove from MindsetView, make inline-editable on Dashboard card | ✅ Done (2026-03-22) |
 | 3 | **Enhanced Mindset** — dynamic rotating questions based on mood/energy/focus scores + ◀ ▶ past-day editing | 🔲 |
-| 4 | **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month | 🔲 |
+| 4 | **Habit detail / history sheet** — tap a habit → full history calendar, streak timeline, best month | ✅ Done (2026-03-25) |
 | 5 | **Task history & summary** — completed tasks grouped by week, category breakdown, overall stats | 🔲 |
 | 6 | **Fix Tasks tab month display** — investigate and fix UI glitch in month calendar | ✅ Done (2026-03-23) |
 | 7 | **Personalised Dashboard header** — greeting with user name + avatar emoji picker | ✅ Done (2026-03-22) |
@@ -578,6 +578,25 @@ The bot doesn't just answer factual questions — it responds to how the user *f
 **Architecture notes:**
 - `TodayNoteCard` is self-contained — owns its own `@State text`, `@State isEditing`, `@FocusState focused`; parent only provides `savedNote: String?` and `onSave: (String) -> Void`
 - Note always lives on `MindsetLog.note`; creating a stub log (50/50/50) when note is added without a mindset check-in is intentional — user can update scores later
+
+---
+
+### Session (2026-03-25) — Habit Detail / History Sheet [DONE]
+
+**What was built:**
+- **HabitDetailView.swift** (new) — full `.sheet` opened via long-press context menu on any habit row:
+  - **Header card** — emoji, habit name, schedule label (Every day / Mon–Fri / custom days), duration badge
+  - **Stats grid** — 2×2 cards: 🔥 Current Streak, 🏆 Best Streak, ✅ Total completions, 📊 30-day rate
+  - **Completion history** — 12 month chip selector (horizontal scroll) + tappable month calendar grid; cells colour-coded teal=done, coral=missed, orange=skipped; tap any past scheduled day to toggle completion
+  - **Month-by-month bar chart** — 12 horizontal bars (last 12 months); best month gets teal→purple gradient + glow + 🏆 trophy caption; others are muted purple
+  - Legend row below calendar (Done / Missed / Skipped)
+- **HabitTrackerView.swift** — added `@State private var detailHabit: Habit?`, "View History" as first context menu item, and `.sheet(item: $detailHabit)` trigger
+
+**Architecture notes:**
+- All stats computed live from `habit.entries` — no new SwiftData fields needed
+- `completionRate(for:)` respects scheduled weekdays and skipped entries (same logic as `completionRate30Days`)
+- Toggle in detail view uses identical logic to `HabitTrackerView.toggleHabit` — consistent behaviour
+- `HDCellState` enum + `HDDayCell` struct prefixed `HD` to avoid name collision with other calendar cells in the app
 
 ---
 
